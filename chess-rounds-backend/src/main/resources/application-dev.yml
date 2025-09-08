@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: chess_app
+    password: EMO@chese@20250906
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  
+
+
+logging:
+  level:
+    com.airoubo.chessrounds: DEBUG
+    org.springframework.web: DEBUG
+  file:
+    name: logs/chess-rounds-dev.log
+
+app:
+  jwt:
+    secret: I3V6WUeBPIocYL4932CnrGPMWkuwREcGDegULjXK8C+ZoVWx09W3J33ZTXQjobbjYXy9+YxjbMS+DcnL6gmSqg==%
+  wechat:
+    app-id: wx402b5a6e5f74462a
+    app-secret: 89fbf2fb2a87dd4400beaf7e41bf7424
+  ai:
+    deepseek:
+      api-key: sk-f7690d01d9734709812cdcedfffd4057

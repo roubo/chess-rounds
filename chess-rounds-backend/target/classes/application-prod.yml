@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:chess_app}
+    password: ${DB_PASSWORD:EMO@chese@20250906}
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+
+logging:
+  level:
+    com.airoubo.chessrounds: INFO
+    org.springframework.security: WARN
+  file:
+    name: /opt/chess-rounds/logs/chess-rounds.log
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  wechat:
+    app-id: ${WECHAT_APP_ID:wx402b5a6e5f74462a}
+    app-secret: ${WECHAT_APP_SECRET:89fbf2fb2a87dd4400beaf7e41bf7424}
+  ai:
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:sk-f7690d01d9734709812cdcedfffd4057}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,184 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: chess-rounds-backend
+  
+  # 数据源配置
+  datasource:
+    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: chess_app
+    password: EMO@chese@20250906
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+    open-in-view: false
+  
+
+  
+  # Redis配置（可选）
+  # data:
+  #   redis:
+  #     host: localhost
+  #     port: 6379
+  #     password:
+  #     database: 0
+  #     timeout: 3000ms
+  #     lettuce:
+  #       pool:
+  #         max-active: 8
+  #         max-idle: 8
+  #         min-idle: 0
+  
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+      enabled: true
+    default-property-inclusion: non_null
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
+# 日志配置
+logging:
+  level:
+    com.airoubo.chessrounds: INFO
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 应用自定义配置
+app:
+  # JWT配置
+  jwt:
+    secret: I3V6WUeBPIocYL4932CnrGPMWkuwREcGDegULjXK8C+ZoVWx09W3J33ZTXQjobbjYXy9+YxjbMS+DcnL6gmSqg==%
+    expiration: 6048000000 # 70天
+  
+  # 微信小程序配置
+  wechat:
+    app-id: wx402b5a6e5f74462a
+    app-secret: 89fbf2fb2a87dd4400beaf7e41bf7424
+    api-url: https://api.weixin.qq.com
+  
+  # AI分析配置
+  ai:
+    deepseek:
+      api-key: your-deepseek-api-key
+      api-url: https://api.deepseek.com
+      model: deepseek-chat
+      max-tokens: 1000
+      timeout: 30000
+
+# 文件存储配置
+file:
+  upload:
+    path: ./uploads/
+    avatar-path: ./uploads/avatars/
+    base-url: /api/files/
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# API文档配置
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: chess_app
+    password: EMO@chese@20250906
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+logging:
+  level:
+    root: INFO
+    com.airoubo.chessrounds: DEBUG
+
+---
+# 测试环境配置
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: chess_app
+    password: EMO@chese@20250906
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.airoubo.chessrounds: INFO
+  file:
+    name: /var/log/chess-rounds/application.log
