@@ -3,12 +3,13 @@
  */
 
 import { mockRoundData, calculateParticipantTotals, calculateTotalTableBoard, mockApiDelay, generateRecordId, mockRoundsList, getUserRounds } from '@/mock/roundData'
+import config from '@/config/api.js'
 
-// Mock模式开关 - 开发时可以设置为true来使用mock数据
+// 是否使用模拟数据
 const USE_MOCK_DATA = false
 
-// API基础配置
-const BASE_URL = 'https://api.airoubo.com/api'
+// API基础URL
+const BASE_URL = config.baseURL
 
 // 获取用户ID的辅助函数
 const getUserId = () => {
@@ -136,12 +137,15 @@ export const roundsApi = {
 		})
 	},
 
-	// 开始回合
-	startRound(roundId) {
-		return request(`/rounds/${roundId}/start`, {
-			method: 'POST'
-		})
-	},
+	startRound(roundId, hasTable, tableUserId) {
+    return request(`/rounds/${roundId}/start`, {
+      method: 'POST',
+      data: {
+        hasTable: hasTable,
+        tableUserId: tableUserId
+      }
+    })
+  },
 
 	// 结束回合
 	endRound(roundId) {
@@ -192,7 +196,7 @@ export const roundsApi = {
 				data: mockRoundData.gameRecords
 			}
 		}
-		return request(`/rounds/${roundId}/records`, { requireUserId: false })
+		return request(`/records/round/${roundId}`, { requireUserId: false })
 	},
 
 	// 添加游戏记录
@@ -217,7 +221,7 @@ export const roundsApi = {
 				data: newRecord
 			}
 		}
-		return request('/game-records', {
+		return request('/records', {
 			method: 'POST',
 			data: recordData
 		})
@@ -225,7 +229,7 @@ export const roundsApi = {
 
 	// 删除游戏记录（管理员功能）
 	deleteGameRecord(recordId) {
-		return request(`/game-records/${recordId}`, {
+		return request(`/records/${recordId}`, {
 			method: 'DELETE'
 		})
 	}

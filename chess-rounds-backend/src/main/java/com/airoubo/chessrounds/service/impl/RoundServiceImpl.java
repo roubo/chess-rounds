@@ -6,6 +6,7 @@ import com.airoubo.chessrounds.dto.round.ParticipantInfoResponse;
 import com.airoubo.chessrounds.dto.user.UserInfoResponse;
 import com.airoubo.chessrounds.entity.Round;
 import com.airoubo.chessrounds.entity.Participant;
+import com.airoubo.chessrounds.entity.User;
 import com.airoubo.chessrounds.enums.RoundStatus;
 import com.airoubo.chessrounds.enums.ParticipantRole;
 import com.airoubo.chessrounds.repository.RoundRepository;
@@ -51,7 +52,8 @@ public class RoundServiceImpl implements RoundService {
         round.setMultiplier(createRequest.getBaseAmount());
         round.setMaxParticipants(createRequest.getMaxParticipants());
         round.setHasTable(createRequest.getHasTable());
-        round.setTableUserId(createRequest.getTableUserId());
+        // 不再使用传入的tableUserId，台板用户在startRound时自动创建
+        round.setTableUserId(null);
         round.setCreatorId(creatorId);
         round.setRoundCode(generateUniqueRoundCode());
         round.setStatus(RoundStatus.WAITING); // 等待中
@@ -157,7 +159,7 @@ public class RoundServiceImpl implements RoundService {
     }
     
     @Override
-    public void startRound(Long roundId, Long userId) {
+    public void startRound(Long roundId, Long userId, Boolean hasTable, Long tableUserId) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new RuntimeException("回合不存在"));
         
@@ -169,6 +171,40 @@ public class RoundServiceImpl implements RoundService {
         // 检查状态
         if (!RoundStatus.WAITING.equals(round.getStatus())) {
             throw new RuntimeException("回合状态不正确");
+        }
+        
+        // 更新台板信息
+        if (hasTable != null) {
+            round.setHasTable(hasTable);
+            round.setTableUserId(tableUserId);
+        }
+        
+        // 如果有台板，创建专门的台板用户并添加为参与者
+        if (round.getHasTable()) {
+            // 为每个回合创建专门的台板用户
+            User tableUser = new User();
+            tableUser.setNickname("台板-" + round.getRoundCode());
+            tableUser.setAvatarUrl("");
+            tableUser.setOpenid("table_" + round.getRoundCode() + "_" + System.currentTimeMillis());
+            tableUser.setUnionid(null);
+            tableUser.setStatus(1); // 1-正常状态
+            tableUser.setCreatedAt(LocalDateTime.now());
+            tableUser.setUpdatedAt(LocalDateTime.now());
+            
+            // 保存台板用户
+            User savedTableUser = userService.saveUser(tableUser);
+            
+            // 更新回合的台板用户ID
+            round.setTableUserId(savedTableUser.getId());
+            
+            // 创建台板参与者记录
+            Participant tableParticipant = new Participant();
+            tableParticipant.setRoundId(roundId);
+            tableParticipant.setUserId(savedTableUser.getId());
+            tableParticipant.setRole(ParticipantRole.TABLE);
+            tableParticipant.setJoinedAt(LocalDateTime.now());
+            tableParticipant.setIsActive(true);
+            participantRepository.save(tableParticipant);
         }
         
         // 更新状态
@@ -266,9 +302,16 @@ public class RoundServiceImpl implements RoundService {
     @Override
     @Transactional(readOnly = true)
     public Page<RoundInfoResponse> getUserRounds(Long userId, Pageable pageable) {
-        // TODO: 实现获取用户参与的回合列表
-        // 需要关联查询RoundParticipant表
-        return Page.empty(pageable);
+        // 查询用户参与的回合ID列表
+        List<Long> roundIds = participantRepository.findRoundIdsByUserId(userId);
+        
+        if (roundIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        // 根据回合ID列表查询回合信息
+        return roundRepository.findByIdIn(roundIds, pageable)
+                .map(round -> convertToRoundInfoResponseWithUserRole(round, userId));
     }
     
     @Override
@@ -406,6 +449,13 @@ public class RoundServiceImpl implements RoundService {
      * 将Round实体转换为RoundInfoResponse
      */
     private RoundInfoResponse convertToRoundInfoResponse(Round round) {
+        return convertToRoundInfoResponseWithUserRole(round, null);
+    }
+    
+    /**
+     * 将Round实体转换为RoundInfoResponse，并设置当前用户角色
+     */
+    private RoundInfoResponse convertToRoundInfoResponseWithUserRole(Round round, Long userId) {
         RoundInfoResponse response = new RoundInfoResponse();
         response.setRoundId(round.getId());
         response.setRoundCode(round.getRoundCode());
@@ -433,8 +483,26 @@ public class RoundServiceImpl implements RoundService {
             }
         }
         
-        // TODO: 设置参与者列表
-        response.setParticipants(new ArrayList<>());
+        // 设置当前用户角色
+        if (userId != null) {
+            if (round.getCreatorId().equals(userId)) {
+                response.setCurrentUserRole("creator");
+            } else {
+                // 查询用户是否为参与者
+                Optional<Participant> participant = participantRepository.findByRoundIdAndUserId(round.getId(), userId);
+                if (participant.isPresent()) {
+                    if (participant.get().getRole() == ParticipantRole.SPECTATOR) {
+                        response.setCurrentUserRole("spectator");
+                    } else {
+                        response.setCurrentUserRole("participant");
+                    }
+                }
+            }
+        }
+        
+        // 设置参与者列表
+        List<ParticipantInfoResponse> participants = getRoundParticipants(round.getId());
+        response.setParticipants(participants);
         
         return response;
     }

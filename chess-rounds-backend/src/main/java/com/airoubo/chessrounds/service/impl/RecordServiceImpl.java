@@ -4,8 +4,10 @@ import com.airoubo.chessrounds.dto.record.CreateRecordRequest;
 import com.airoubo.chessrounds.dto.record.RecordInfoResponse;
 import com.airoubo.chessrounds.dto.user.UserInfoResponse;
 import com.airoubo.chessrounds.entity.Record;
+import com.airoubo.chessrounds.entity.ParticipantRecord;
 import com.airoubo.chessrounds.enums.RecordType;
 import com.airoubo.chessrounds.repository.RecordRepository;
+import com.airoubo.chessrounds.repository.ParticipantRecordRepository;
 import com.airoubo.chessrounds.service.RecordService;
 import com.airoubo.chessrounds.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,9 @@ public class RecordServiceImpl implements RecordService {
     private RecordRepository recordRepository;
     
     @Autowired
+    private ParticipantRecordRepository participantRecordRepository;
+    
+    @Autowired
     private UserService userService;
     
     @Override
@@ -51,7 +56,31 @@ public class RecordServiceImpl implements RecordService {
         record.setSequenceNumber(1); // TODO: 实现序列号生成逻辑
         record.setCreatedAt(LocalDateTime.now());
         
+        // 提取参与者ID列表
+        if (createRequest.getParticipantRecords() != null && !createRequest.getParticipantRecords().isEmpty()) {
+            List<Long> participantIds = createRequest.getParticipantRecords().stream()
+                    .map(CreateRecordRequest.ParticipantRecordRequest::getUserId)
+                    .collect(Collectors.toList());
+            record.setParticipants(participantIds);
+        }
+        
         record = recordRepository.save(record);
+        
+        // 保存参与者记录
+        if (createRequest.getParticipantRecords() != null && !createRequest.getParticipantRecords().isEmpty()) {
+            for (CreateRecordRequest.ParticipantRecordRequest participantRequest : createRequest.getParticipantRecords()) {
+                ParticipantRecord participantRecord = new ParticipantRecord();
+                participantRecord.setRecordId(record.getId());
+                participantRecord.setRoundId(createRequest.getRoundId());
+                participantRecord.setUserId(participantRequest.getUserId());
+                participantRecord.setAmountChange(participantRequest.getAmountChange());
+                participantRecord.setIsWinner(participantRequest.getIsWinner());
+                participantRecord.setRemarks(participantRequest.getRemarks());
+                participantRecord.setCreatedAt(LocalDateTime.now());
+                
+                participantRecordRepository.save(participantRecord);
+            }
+        }
         
         return convertToRecordInfoResponse(record);
     }
@@ -66,8 +95,18 @@ public class RecordServiceImpl implements RecordService {
     @Override
     @Transactional(readOnly = true)
     public Page<RecordInfoResponse> getRoundRecords(Long roundId, Pageable pageable) {
-        // 暂时返回空页面，需要Repository支持分页查询
-        return Page.empty(pageable);
+        // 获取回合的所有记录并转换为分页
+        List<Record> records = recordRepository.findByRoundIdOrderBySequenceNumber(roundId);
+        List<RecordInfoResponse> responses = records.stream()
+                .map(this::convertToRecordInfoResponse)
+                .collect(Collectors.toList());
+        
+        // 手动分页
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), responses.size());
+        List<RecordInfoResponse> pageContent = start < responses.size() ? responses.subList(start, end) : new ArrayList<>();
+        
+        return new PageImpl<>(pageContent, pageable, responses.size());
     }
     
     @Override
@@ -277,6 +316,27 @@ public class RecordServiceImpl implements RecordService {
         if (userInfo.isPresent()) {
             response.setRecorder(userInfo.get());
         }
+        
+        // 获取参与者详情
+        List<ParticipantRecord> participantRecords = participantRecordRepository.findByRecordId(record.getId());
+        List<RecordInfoResponse.ParticipantRecordResponse> participantDetails = new ArrayList<>();
+        
+        for (ParticipantRecord participantRecord : participantRecords) {
+            RecordInfoResponse.ParticipantRecordResponse participantDetail = new RecordInfoResponse.ParticipantRecordResponse();
+            participantDetail.setAmountChange(participantRecord.getAmountChange());
+            participantDetail.setIsWinner(participantRecord.getIsWinner());
+            participantDetail.setRemarks(participantRecord.getRemarks());
+            
+            // 获取参与者用户信息
+            Optional<UserInfoResponse> participantUserInfo = userService.getUserById(participantRecord.getUserId());
+            if (participantUserInfo.isPresent()) {
+                participantDetail.setUserInfo(participantUserInfo.get());
+            }
+            
+            participantDetails.add(participantDetail);
+        }
+        
+        response.setParticipantDetails(participantDetails);
         
         return response;
     }

@@ -77,7 +77,7 @@
 			<!-- 二维码邀请区域 -->
 			<view class="card mt-20">
 				<view class="qr-section">
-					<view class="section-title">邀请加入</view>
+					<view class="section-title">扫码加入</view>
 					<view class="qr-container">
 						<view v-if="createdRoundId" class="qr-code-wrapper">
 							<canvas 
@@ -89,10 +89,6 @@
 						<view v-else class="qr-placeholder">
 							<view class="placeholder-icon">📱</view>
 							<text class="placeholder-text">正在生成邀请二维码...</text>
-						</view>
-						<view v-if="createdRoundId" class="qr-actions">
-							<button class="action-btn" @click="shareQRCode">分享二维码</button>
-							<button class="action-btn secondary" @click="copyInviteLink">复制邀请链接</button>
 						</view>
 					</view>
 				</view>
@@ -134,18 +130,19 @@ export default {
 	data() {
 		return {
 			formData: {
-				hasTableBoard: false,
-				gameMultiplier: 1
-			},
-			isCreating: false,
-			isStarting: false,
-			isRefreshing: false,
-			createdRoundId: null,
-			qrSize: 200,
-			roundParticipants: [],
-			refreshTimer: null,
-			maxPlayers: 4,
-			currentUser: null
+			hasTableBoard: false,
+			gameMultiplier: 1
+		},
+		isCreating: false,
+		isStarting: false,
+		isRefreshing: false,
+		createdRoundId: null,
+		qrSize: 135,
+		roundParticipants: [],
+		refreshTimer: null,
+		maxPlayers: 4,
+		currentUser: null,
+		isEditMode: false
 		}
 	},
 	computed: {
@@ -173,11 +170,12 @@ export default {
 		},
 		// 是否可以开始回合
 		canStartRound() {
-			const minPlayers = this.formData.hasTableBoard ? 5 : 4
+			// 支持两人及以上参与者开始回合
+			const minPlayers = 2
 			return this.roundParticipants.length >= minPlayers
 		}
 	},
-	async onLoad() {
+	async onLoad(options) {
 		// 页面加载时的初始化
 		this.updateMaxPlayers()
 		this.currentUser = AuthManager.getCurrentUser()
@@ -194,8 +192,15 @@ export default {
 			return
 		}
 		
-		// 立即创建回合
-		await this.autoCreateRound()
+		// 如果有回合ID，则加载现有回合；否则创建新回合
+		if (options.id) {
+			this.createdRoundId = options.id
+			this.isEditMode = true
+			await this.loadExistingRound(options.id)
+		} else {
+			// 立即创建回合
+			await this.autoCreateRound()
+		}
 	},
 	onUnload() {
 		// 清理定时器
@@ -266,7 +271,7 @@ export default {
 					max_participants: this.maxPlayers,
 					base_amount: this.formData.gameMultiplier || 1.0,
 					has_table: this.formData.hasTableBoard || false,
-					table_user_id: this.formData.hasTableBoard ? (this.currentUser.id || this.currentUser.user_id) : null,
+					// table_user_id 已移除，台板用户由后端自动创建
 					is_public: false, // 默认私有
 					allow_spectator: true, // 允许旁观
 					auto_start_minutes: null // 不设置自动开始时间
@@ -302,6 +307,11 @@ export default {
 				
 				// 开始定时刷新参与者列表
 				this.startRefreshTimer()
+				
+				// 设置页面标题
+				uni.setNavigationBarTitle({
+					title: '等待参与者'
+				})
 				
 				uni.hideLoading()
 				uni.showToast({
@@ -350,7 +360,7 @@ export default {
 					max_participants: this.maxPlayers,
 					base_amount: this.formData.gameMultiplier || 1.0,
 					has_table: this.formData.hasTableBoard || false,
-					table_user_id: this.formData.hasTableBoard ? (currentUser.id || currentUser.user_id) : null,
+					// table_user_id 已移除，台板用户由后端自动创建
 					is_public: false, // 默认私有
 					allow_spectator: true, // 允许旁观
 					auto_start_minutes: null // 不设置自动开始时间
@@ -406,17 +416,16 @@ export default {
 		// 开始回合
 		async handleStartRound() {
 			if (!this.canStartRound) {
-				uni.showToast({
-					title: `需要${this.maxPlayers}人才能开始`,
-					icon: 'none'
-				})
 				return
 			}
 			
-			this.isStarting = true
-			
 			try {
-				await roundsApi.startRound(this.createdRoundId)
+				// 开始回合，传递台板状态参数
+				await roundsApi.startRound(
+					this.createdRoundId,
+					this.formData.hasTableBoard,
+					null // 台板用户现在由后端自动创建
+				)
 				
 				uni.showToast({
 					title: '回合已开始',
@@ -424,18 +433,18 @@ export default {
 				})
 				
 				// 跳转到回合详情页
-				uni.redirectTo({
-					url: `/pages/round-detail/round-detail?id=${this.createdRoundId}`
-				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: `/pages/round-detail/round-detail?id=${this.createdRoundId}`
+					})
+				}, 1500)
 				
 			} catch (error) {
 				console.error('开始回合失败:', error)
 				uni.showToast({
-					title: error.message || '开始失败',
-					icon: 'none'
+					title: '开始回合失败',
+					icon: 'error'
 				})
-			} finally {
-				this.isStarting = false
 			}
 		},
 		
@@ -448,32 +457,53 @@ export default {
 		async generateQRCode() {
 			try {
 				console.log('开始生成小程序码，回合ID:', this.createdRoundId)
-				// 调用后端API生成小程序码
-				const response = await uni.request({
-					url: `${getApp().globalData.apiBaseUrl}/rounds/${this.createdRoundId}/miniprogram-code`,
-					method: 'GET',
-					responseType: 'arraybuffer',
-					header: {
-						'Authorization': `Bearer ${uni.getStorageSync('token')}`
-					}
-				})
-				console.log('小程序码API响应:', response.statusCode, response.data ? '有数据' : '无数据')
 				
-				if (response.statusCode === 200) {
-					// 将arraybuffer转换为base64
-					const base64 = uni.arrayBufferToBase64(response.data)
-					const imageUrl = `data:image/png;base64,${base64}`
-					
-					// 在canvas上绘制小程序码
-					const canvas = uni.createCanvasContext('qrCanvas', this)
-					const img = canvas.createImage()
-					img.onload = () => {
-						canvas.drawImage(img, 0, 0, this.qrSize, this.qrSize)
-						canvas.draw()
-					}
-					img.src = imageUrl
+				// 直接使用uni.downloadFile下载图片，避免UTF8转换问题
+				console.log('使用downloadFile下载小程序码图片')
+				
+				const downloadResult = await new Promise((resolve, reject) => {
+					uni.downloadFile({
+						url: `${getApp().globalData.apiBaseUrl}/rounds/${this.createdRoundId}/miniprogram-code`,
+						header: {
+							'Authorization': `Bearer ${uni.getStorageSync('token')}`
+						},
+						success: (res) => {
+							console.log('下载成功:', res)
+							resolve(res)
+						},
+						fail: (err) => {
+							console.log('下载失败:', err)
+							reject(err)
+						}
+					})
+				})
+				
+				if (downloadResult.statusCode === 200 && downloadResult.tempFilePath) {
+						console.log('下载的临时文件路径:', downloadResult.tempFilePath)
+						
+						// 在canvas上绘制小程序码
+						const canvas = uni.createCanvasContext('qrCanvas', this)
+						
+						// 使用uni.getImageInfo获取图片信息后绘制
+						uni.getImageInfo({
+							src: downloadResult.tempFilePath,
+							success: (imageInfo) => {
+								console.log('图片信息获取成功:', imageInfo)
+								// 直接使用drawImage绘制
+								canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
+								canvas.draw()
+								console.log('小程序码绘制完成')
+							},
+							fail: (err) => {
+								console.error('获取图片信息失败:', err)
+								// 尝试直接绘制
+								canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
+								canvas.draw()
+							}
+						})
 				} else {
-					throw new Error('生成小程序码失败')
+					console.error('下载文件失败:', downloadResult)
+					throw new Error('下载小程序码失败')
 				}
 				
 			} catch (error) {
@@ -485,27 +515,7 @@ export default {
 			}
 		},
 		
-		// 分享小程序码
-		shareQRCode() {
-			uni.share({
-				title: '邀请加入麻将回合',
-				path: `/pages/round-detail/round-detail?id=${this.createdRoundId}`
-			})
-		},
-		
-		// 复制邀请链接
-		copyInviteLink() {
-			const inviteUrl = `${getApp().globalData.baseUrl}/join-round?id=${this.createdRoundId}`
-			uni.setClipboardData({
-				data: inviteUrl,
-				success: () => {
-					uni.showToast({
-						title: '链接已复制',
-						icon: 'success'
-					})
-				}
-			})
-		},
+
 		
 		// 加载参与者列表
 		async loadParticipants() {
@@ -525,6 +535,52 @@ export default {
 			} catch (error) {
 				console.error('加载参与者失败:', error)
 				this.roundParticipants = []
+			}
+		},
+		
+		// 加载现有回合数据
+		async loadExistingRound(roundId) {
+			try {
+				uni.showLoading({
+					title: '加载回合中...'
+				})
+				
+				// 获取回合详情
+				const response = await roundsApi.getRoundDetail(roundId)
+				const roundData = response.data || response
+				
+				// 设置表单数据
+				this.formData.hasTableBoard = roundData.has_table || false
+				this.formData.gameMultiplier = roundData.base_amount || 1
+				this.updateMaxPlayers()
+				
+				// 加载参与者列表
+				await this.loadParticipants()
+				
+				// 生成二维码
+				await this.generateQRCode()
+				
+				// 开始定时刷新参与者列表
+				this.startRefreshTimer()
+				
+				// 设置页面标题
+				uni.setNavigationBarTitle({
+					title: '等待参与者'
+				})
+				
+				uni.hideLoading()
+				
+			} catch (error) {
+				console.error('加载现有回合失败:', error)
+				uni.hideLoading()
+				uni.showModal({
+					title: '加载失败',
+					content: '无法加载回合信息，请重试',
+					confirmText: '返回',
+					success: () => {
+						uni.navigateBack()
+					}
+				})
 			}
 		},
 		
@@ -551,15 +607,16 @@ export default {
 
 .scroll-container {
 	flex: 1;
-	padding: 20rpx;
 }
 
 .card {
 	background: white;
-	border-radius: 16rpx;
-	padding: 30rpx;
-	margin-bottom: 20rpx;
-	box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
+	border-radius: 20rpx;
+	padding: 28rpx;
+	margin-left: 18rpx;
+	margin-right: 18rpx;
+	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+	border: 1rpx solid rgba(0, 0, 0, 0.05);
 }
 
 .card-title {
@@ -627,12 +684,12 @@ export default {
 .participants-grid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
-	gap: 20rpx;
-	margin-top: 20rpx;
+	gap: 12rpx;
+	margin-top: 12rpx;
 	
 	&.compact {
 		grid-template-columns: repeat(3, 1fr);
-		gap: 15rpx;
+		gap: 10rpx;
 	}
 }
 
@@ -640,18 +697,18 @@ export default {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	padding: 30rpx 20rpx;
-	border-radius: 16rpx;
+	padding: 16rpx 12rpx;
+	border-radius: 10rpx;
 	border: 2rpx dashed #e5e5e5;
 	background: #fafafa;
 	transition: all 0.3s;
-	min-height: 160rpx;
+	min-height: 110rpx;
 	justify-content: center;
 	
 	&.compact {
-		padding: 20rpx 15rpx;
-		border-radius: 12rpx;
-		min-height: 120rpx;
+		padding: 12rpx 8rpx;
+		border-radius: 8rpx;
+		min-height: 90rpx;
 	}
 	
 	&.occupied {
@@ -677,18 +734,18 @@ export default {
 }
 
 .slot-avatar {
-	width: 80rpx;
-	height: 80rpx;
+	width: 55rpx;
+	height: 55rpx;
 	border-radius: 50%;
-	margin-bottom: 12rpx;
+	margin-bottom: 6rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	
 	&.compact {
-		width: 60rpx;
-		height: 60rpx;
-		margin-bottom: 8rpx;
+		width: 45rpx;
+		height: 45rpx;
+		margin-bottom: 4rpx;
 	}
 }
 
@@ -832,13 +889,13 @@ export default {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 30rpx;
+	gap: 20rpx;
 }
 
 .qr-container {
-	padding: 20rpx;
+	padding: 15rpx;
 	background: white;
-	border-radius: 12rpx;
+	border-radius: 8rpx;
 	border: 2rpx solid #f0f0f0;
 	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 }
@@ -852,22 +909,22 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 200rpx;
-	height: 200rpx;
+	width: 120rpx;
+	height: 120rpx;
 	border: 2rpx dashed #e0e0e0;
-	border-radius: 8rpx;
+	border-radius: 6rpx;
 	background-color: #f9f9f9;
 	margin: 0 auto;
 }
 
 .placeholder-icon {
-	font-size: 48rpx;
-	margin-bottom: 12rpx;
+	font-size: 36rpx;
+	margin-bottom: 8rpx;
 	opacity: 0.6;
 }
 
 .placeholder-text {
-	font-size: 28rpx;
+	font-size: 24rpx;
 	color: #999;
 	text-align: center;
 }
@@ -914,10 +971,11 @@ export default {
 // 操作按钮样式
 .action-buttons {
 	display: flex;
-	gap: 20rpx;
-	padding: 20rpx 20rpx calc(20rpx + env(safe-area-inset-bottom));
+	gap: 16rpx;
+	padding: 24rpx 30rpx calc(24rpx + env(safe-area-inset-bottom)) 30rpx;
 	background: white;
-	border-top: 2rpx solid #f0f0f0;
+	border-top: 1rpx solid #f0f0f0;
+	box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .loading-hint {
@@ -939,8 +997,8 @@ export default {
 	background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
 	color: white;
 	border: none;
-	border-radius: 12rpx;
-	height: 88rpx;
+	border-radius: 14rpx;
+	height: 92rpx;
 	font-size: 32rpx;
 	font-weight: 600;
 	transition: all 0.3s;
@@ -948,6 +1006,7 @@ export default {
 	align-items: center;
 	justify-content: center;
 	text-align: center;
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.3);
 	
 	&:active {
 		transform: translateY(2rpx);
@@ -965,8 +1024,8 @@ export default {
 	background: white;
 	color: #666;
 	border: 2rpx solid #e5e5e5;
-	border-radius: 12rpx;
-	height: 88rpx;
+	border-radius: 14rpx;
+	height: 92rpx;
 	font-size: 32rpx;
 	font-weight: 500;
 	transition: all 0.3s;
@@ -974,6 +1033,7 @@ export default {
 	align-items: center;
 	justify-content: center;
 	text-align: center;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 	
 	&:active {
 		background: #f5f5f5;

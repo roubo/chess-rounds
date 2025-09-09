@@ -40,7 +40,7 @@ public class CreateRoundRequest implements Serializable {
     private Boolean hasTable = false;
     
     /**
-     * 台板用户ID
+     * 台板用户ID（已废弃，系统会自动创建台板用户）
      */
     @JsonProperty("table_user_id")
     private Long tableUserId;

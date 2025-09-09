@@ -95,13 +95,21 @@ export default {
 		this.loadRounds()
 	},
 	computed: {
-		// 我的回合（参与者或创建者）
+		// 我的回合（参与者或创建者，且participants不为空）
 		myRounds() {
-			return this.rounds.filter(round => round.isParticipant || round.isCreator)
+			return this.rounds.filter(round => {
+				// 过滤掉participants为空的项目
+				const hasParticipants = round.participants && round.participants.length > 0
+				return hasParticipants && (round.isParticipant || round.isCreator)
+			})
 		},
-		// 旁观回合（仅旁观者）
+		// 旁观回合（仅旁观者，且participants不为空）
 		spectateRounds() {
-			return this.rounds.filter(round => round.isSpectator && !round.isParticipant && !round.isCreator)
+			return this.rounds.filter(round => {
+				// 过滤掉participants为空的项目
+				const hasParticipants = round.participants && round.participants.length > 0
+				return hasParticipants && round.isSpectator && !round.isParticipant && !round.isCreator
+			})
 		}
 	},
 	methods: {
@@ -116,17 +124,55 @@ export default {
 				// 获取我的所有回合（包括参与和旁观）
 				const result = await roundsApi.getMyRounds()
 				
-				// 适配mock数据响应格式
-				if ((result.success || result.code === 200) && result.data) {
-					this.rounds = result.data.content || result.data
-					// 显示mock数据加载成功提示
-					if (result.code === 200) {
-						uni.showToast({
-							title: '回合列表加载成功',
-							icon: 'success',
-							duration: 1500
-						})
-					}
+				// 处理API响应数据
+				if (result && result.content) {
+					// 处理回合数据，将后端snake_case字段映射为前端camelCase字段
+					this.rounds = result.content.map(round => {
+						return {
+							// 基础字段映射
+							id: round.round_id,
+							roundId: round.round_id,
+							code: round.round_code,
+							roundCode: round.round_code,
+							gameType: round.game_type,
+							status: round.status,
+							maxParticipants: round.max_participants,
+							currentParticipants: round.current_participants,
+							baseAmount: round.base_amount,
+							totalAmount: round.total_amount,
+							hasTable: round.has_table,
+							
+							isPublic: round.is_public,
+							hasPassword: round.has_password,
+							allowSpectator: round.allow_spectator,
+							spectatorCount: round.spectator_count,
+							startTime: round.start_time,
+							endTime: round.end_time,
+							createdAt: round.created_at,
+							updatedAt: round.updated_at,
+							creator: round.creator,
+							tableUser: round.table_user,
+							participants: round.participants || [],
+							canJoin: round.can_join,
+							recordCount: 0, // 暂时设为0，后续可从其他接口获取
+							// 用户角色标识
+							currentUserRole: round.current_user_role,
+							isCreator: round.current_user_role === 'creator',
+							isParticipant: round.current_user_role === 'participant' || round.current_user_role === 'creator',
+							isSpectator: round.current_user_role === 'spectator',
+							// 兼容字段
+							maxPlayers: round.max_participants,
+							currentPlayers: round.current_participants
+						}
+					})
+					
+					uni.showToast({
+						title: `加载了${this.rounds.length}个回合`,
+						icon: 'success',
+						duration: 1500
+					})
+				} else {
+					this.rounds = []
 				}
 				
 			} catch (error) {

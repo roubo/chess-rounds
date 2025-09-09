@@ -2,6 +2,7 @@
  * 用户认证和状态管理工具
  */
 import { userApi } from './api.js'
+import config from '@/config/api.js'
 
 export class AuthManager {
 	/**
@@ -204,9 +205,8 @@ export class AuthManager {
 		
 		// 如果是相对路径，拼接基础URL
 		if (avatarUrl.startsWith('/')) {
-			// 从api.js获取baseURL配置
-			const baseURL = 'https://api.airoubo.com'
-			return baseURL + avatarUrl
+			// 使用统一的静态资源基础URL配置
+			return config.staticBaseURL + avatarUrl
 		}
 		
 		// 默认头像

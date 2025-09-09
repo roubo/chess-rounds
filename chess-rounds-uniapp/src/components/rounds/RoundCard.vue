@@ -6,7 +6,7 @@
 				<text class="create-time-text">{{ formatCreateTime(round.createdAt) }}</text>
 			</view>
 			<view class="round-info">
-				<text class="round-code">{{ round.roundCode || round.code }}</text>
+				<text class="round-status" :class="statusClass">{{ getStatusText(round.status) }}</text>
 				<text class="round-time">共{{ round.recordCount || 0 }}局</text>
 			</view>
 		</view>
@@ -20,7 +20,7 @@
 				class="amount-item-new"
 				:class="{ 'current-user': participant.isCurrentUser }"
 			>
-				<image class="participant-avatar" :src="participant.avatar || participant.avatarUrl || '/static/images/default-avatar.png'" mode="aspectFill" />
+				<image class="participant-avatar" :src="participant.avatarUrl || participant.avatar || '/static/images/default-avatar.png'" mode="aspectFill" />
 				<view class="participant-info">
 					<text class="participant-name">{{ participant.nickname || participant.name }}</text>
 					<text class="participant-amount" :class="{ 'positive': participant.totalAmount > 0, 'negative': participant.totalAmount < 0 }">
@@ -29,16 +29,7 @@
 				</view>
 			</view>
 			
-			<!-- 台板累计 -->
-			<view v-if="round.hasTableBoard" class="amount-item-new table-board">
-				<image class="participant-avatar" src="/static/images/table-board.png" mode="aspectFill" />
-				<view class="participant-info">
-					<text class="participant-name">台板</text>
-					<text class="participant-amount" :class="{ 'positive': round.tableBoardAmount > 0, 'negative': round.tableBoardAmount < 0 }">
-						{{ formatAmount(round.tableBoardAmount || 0) }}
-					</text>
-				</view>
-			</view>
+
 		</view>
 		
 		<!-- 操作按钮 -->
@@ -55,6 +46,7 @@
 
 <script>
 import { roundsApi, handleApiError } from '@/api/rounds.js'
+import config from '@/config/api.js'
 
 export default {
 	name: 'RoundCard',
@@ -74,37 +66,57 @@ export default {
 	
 	computed: {
 		canJoin() {
-			return this.round.status === 'WAITING' && 
+			return this.round.status === 'watting' && 
 				   this.round.currentPlayers < this.round.maxPlayers &&
 				   !this.round.isParticipant
 		},
 		canSpectate() {
-			return this.round.status === 'PLAYING' && !this.round.isParticipant
+			return this.round.status === 'playing' && !this.round.isParticipant
 		},
 		statusClass() {
-			return this.getStatusClass(this.round.status)
+			return `status-${this.round.status?.toLowerCase()}`
 		},
 		displayParticipants() {
-			if (!this.round.participants) return []
-			// 过滤掉台板参与者，避免重复显示
-			return this.round.participants
-				.filter(participant => participant.role !== 'table_board')
-				.map(participant => ({
+				if (!this.round.participants) return []
+				// 过滤掉台板参与者，避免重复显示
+				return this.round.participants
+					.filter(participant => participant.role !== 'table_board' && participant.role !== 'table')
+					.map(participant => {
+						const mapped = {
 					...participant,
-					isCurrentUser: participant.isCurrentUser || false,
-					totalAmount: participant.totalAmount || participant.finalScore || 0
-				}))
+					isCurrentUser: participant.user_id === this.currentUserId,
+					totalAmount: participant.total_amount || 0,
+					// 映射用户信息字段
+					avatar: participant.user_info?.avatar_url || participant.avatar,
+					avatarUrl: participant.user_info?.avatar_url || participant.avatarUrl,
+					nickname: participant.user_info?.nickname || participant.nickname,
+					name: participant.user_info?.nickname || participant.name
+				}
+				
+				// 处理头像URL拼接
+				if (mapped.avatarUrl && !mapped.avatarUrl.startsWith('http')) {
+					mapped.avatarUrl = config.staticBaseURL + mapped.avatarUrl
+				}
+				
+				console.log('原始participant:', participant)
+				console.log('映射后participant:', mapped)
+				console.log('头像URL:', mapped.avatarUrl)
+				console.log('avatar字段:', mapped.avatar)
+				console.log('avatarUrl字段:', mapped.avatarUrl)
+				return mapped
+					})
 		}
 	},
 	methods: {
 		getStatusText(status) {
+			console.log('Status value:', status, 'Type:', typeof status)
 			const statusMap = {
-				WAITING: '等待中',
-				PLAYING: '进行中',
-				FINISHED: '已结束',
-				CANCELLED: '已取消'
+				waiting: '组局中',
+				playing: '进行中',
+				finished: '已结束',
+				cancelled: '已取消'
 			}
-			return statusMap[status] || '未知'
+			return statusMap[status] || `未知(${status})`
 		},
 		getStatusClass(status) {
 			return `status-${status?.toLowerCase()}`
@@ -168,9 +180,18 @@ export default {
 			return `${month}-${day}`
 		},
 		goToDetail() {
-			uni.navigateTo({
-				url: `/pages/round-detail/round-detail?id=${this.round.id}`
-			})
+			console.log(this.round)
+			// 如果是组局中状态且当前用户是创建者，跳转到创建页面
+			if (this.round.status === 'waiting' && this.round.currentUserRole === 'creator') {
+				uni.navigateTo({
+					url: `/pages/create-round/create-round?id=${this.round.id}`
+				})
+			} else {
+				// 其他情况跳转到详情页面
+				uni.navigateTo({
+					url: `/pages/round-detail/round-detail?id=${this.round.id}`
+				})
+			}
 		},
 		async joinRound() {
 			if (this.isJoining) return
@@ -262,12 +283,7 @@ export default {
 	position: relative;
 }
 
-.round-status {
-	padding: 6rpx 12rpx;
-	border-radius: 12rpx;
-	font-size: 22rpx;
-	font-weight: bold;
-}
+
 
 .round-info {
 	display: flex;
@@ -275,10 +291,11 @@ export default {
 	align-items: flex-end;
 	gap: 4rpx;
 
-	.round-code {
-		font-size: 24rpx;
-		color: $uni-text-color;
+	.round-status {
+		font-size: 22rpx;
 		font-weight: 500;
+		padding: 4rpx 8rpx;
+		border-radius: 8rpx;
 	}
 
 	.round-time {
@@ -339,10 +356,7 @@ export default {
 		flex: 1;
 		min-width: 0;
 
-		&.table-board {
-			background-color: #fff3cd;
-			border-color: #ffeaa7;
-		}
+
 
 		&.current-user {
 			border-color: $uni-color-primary;

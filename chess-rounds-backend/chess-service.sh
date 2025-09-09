@@ -4,7 +4,7 @@
 # Usage: ./chess-service.sh {start|stop|restart|status}
 
 SERVICE_NAME="chess-rounds-backend"
-JAR_FILE="chess-rounds-backend-1.0.0.jar"
+JAR_FILE="target/chess-rounds-backend-1.0.0.jar"
 PID_FILE="/tmp/${SERVICE_NAME}.pid"
 LOG_FILE="logs/chess-rounds.log"
 PROFILE="prod"

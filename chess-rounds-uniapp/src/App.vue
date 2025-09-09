@@ -60,7 +60,7 @@
 		},
 		globalData: {
 			test: '',
-			apiBaseUrl: 'https://api.airoubo.com',
+			apiBaseUrl: 'https://api.airoubo.com/api',
 			baseUrl: 'https://mp.airoubo.com'
 		},
 		methods: {

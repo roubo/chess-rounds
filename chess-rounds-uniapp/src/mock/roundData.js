@@ -69,11 +69,11 @@ export const mockRoundData = {
 			roundId: 'mock-round-001',
 			gameNumber: 1,
 			participantAmounts: {
-				'1': 20,  // 张三赢了20
-				'user-002': 15,  // 李四赢了15
+				'1': 15,  // 张三赢了15
+				'user-002': 10,  // 李四赢了10
 				'user-003': -10, // 王五输了10
 				'user-004': -25, // 赵六输了25
-				'table-board': 0 // 台板为0（总和：20+15-10-25+0=0）
+				'table-board': 10 // 台板赢了10（总和：15+10-10-25+10=0）
 			},
 			createdAt: '2025-01-08T10:30:00Z',
 			createdBy: '1'
@@ -84,10 +84,10 @@ export const mockRoundData = {
 			gameNumber: 2,
 			participantAmounts: {
 				'1': -30, // 张三输了30
-				'user-002': 25,  // 李四赢了25
-				'user-003': 40,  // 王五赢了40
+				'user-002': 20,  // 李四赢了20
+				'user-003': 35,  // 王五赢了35
 				'user-004': -35, // 赵六输了35
-				'table-board': 0 // 台板为0（总和：-30+25+40-35+0=0）
+				'table-board': 10 // 台板赢了10（总和：-30+20+35-35+10=0）
 			},
 			createdAt: '2025-01-08T11:15:00Z',
 			createdBy: 'user-002'
@@ -97,11 +97,11 @@ export const mockRoundData = {
 			roundId: 'mock-round-001',
 			gameNumber: 3,
 			participantAmounts: {
-				'1': 10,  // 张三赢了10
-				'user-002': -20, // 李四输了20
-				'user-003': 5,   // 王五赢了5
+				'1': 5,   // 张三赢了5
+				'user-002': -25, // 李四输了25
+				'user-003': 0,   // 王五平局
 				'user-004': 5,   // 赵六赢了5
-				'table-board': 0 // 台板为0（总和：10-20+5+5+0=0）
+				'table-board': 15 // 台板赢了15（总和：5-25+0+5+15=0）
 			},
 			createdAt: '2025-01-08T12:00:00Z',
 			createdBy: 'user-003'
@@ -111,11 +111,11 @@ export const mockRoundData = {
 			roundId: 'mock-round-001',
 			gameNumber: 4,
 			participantAmounts: {
-				'1': -15,  // 张三输了15
-				'user-002': 30,  // 李四赢了30
+				'1': -20,  // 张三输了20
+				'user-002': 25,  // 李四赢了25
 				'user-003': -25, // 王五输了25
 				'user-004': 10,  // 赵六赢了10
-				'table-board': 0 // 台板为0（总和：-15+30-25+10+0=0）
+				'table-board': 10 // 台板赢了10（总和：-20+25-25+10+10=0）
 			},
 			createdAt: '2025-01-08T12:45:00Z',
 			createdBy: 'user-002'
@@ -125,11 +125,11 @@ export const mockRoundData = {
 			roundId: 'mock-round-001',
 			gameNumber: 5,
 			participantAmounts: {
-				'1': 25,   // 张三赢了25
-				'user-002': -10, // 李四输了10
-				'user-003': 15,  // 王五赢了15
+				'1': 20,   // 张三赢了20
+				'user-002': -15, // 李四输了15
+				'user-003': 10,  // 王五赢了10
 				'user-004': -30, // 赵六输了30
-				'table-board': 0 // 台板为0（总和：25-10+15-30+0=0）
+				'table-board': 15 // 台板赢了15（总和：20-15+10-30+15=0）
 			},
 			createdAt: '2025-01-08T13:30:00Z',
 			createdBy: '1'
@@ -348,11 +348,7 @@ export const getUserRounds = (userId) => {
     }
   })
   
-  // 计算台板累计金额（与详情页逻辑完全一致）
-   const tableBoardAmount = gameRecords.reduce((total, record) => {
-     // 台板金额是负值，取绝对值作为累计
-     return total + Math.abs(record.participantAmounts?.['table-board'] || 0)
-   }, 0)
+  // 台板不再在回合列表中显示
   
   return [{
     // 使用详情页的roundInfo作为基础数据
@@ -373,8 +369,6 @@ export const getUserRounds = (userId) => {
     
     // 参与者和累计数据（与详情页完全同源）
     participants: participantsWithAmounts,
-    hasTableBoard: tableBoardAmount > 0,
-    tableBoardAmount: tableBoardAmount,
     recordCount: gameRecords.length,
     
     // 显示用的头像列表

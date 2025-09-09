@@ -99,12 +99,21 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     Long countByRoundIdAndRole(Long roundId, ParticipantRole role);
     
     /**
-     * 统计用户参与的回合数量
+     * 根据用户ID统计参与的回合数量
      * 
      * @param userId 用户ID
-     * @return 回合数量
+     * @return 参与的回合数量
      */
     Long countByUserId(Long userId);
+    
+    /**
+     * 根据用户ID查询参与的回合ID列表
+     * 
+     * @param userId 用户ID
+     * @return 回合ID列表
+     */
+    @Query("SELECT DISTINCT p.roundId FROM Participant p WHERE p.userId = :userId AND p.isActive = true")
+    List<Long> findRoundIdsByUserId(@Param("userId") Long userId);
     
     /**
      * 检查用户是否已参与回合

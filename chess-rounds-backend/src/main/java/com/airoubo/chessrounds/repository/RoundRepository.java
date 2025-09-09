@@ -49,6 +49,15 @@ public interface RoundRepository extends JpaRepository<Round, Long> {
     Page<Round> findByStatus(RoundStatus status, Pageable pageable);
     
     /**
+     * 根据ID列表查询回合
+     * 
+     * @param ids 回合ID列表
+     * @param pageable 分页参数
+     * @return 回合分页列表
+     */
+    Page<Round> findByIdIn(List<Long> ids, Pageable pageable);
+    
+    /**
      * 根据创建者和状态查询回合
      * 
      * @param creatorId 创建者ID

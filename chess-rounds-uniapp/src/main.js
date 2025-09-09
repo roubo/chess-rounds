@@ -3,6 +3,7 @@ import store from './store'
 import api from './utils/api.js'
 import WechatAPI from './utils/wechat.js'
 import AuthManager from './utils/auth.js'
+import config from './config/api.js'
 
 // #ifndef VUE3
 import Vue from 'vue'
@@ -18,6 +19,7 @@ Vue.prototype.$backgroundAudioData = {
 Vue.prototype.$api = api
 Vue.prototype.$wechat = WechatAPI
 Vue.prototype.$auth = AuthManager
+Vue.prototype.$config = config
 App.mpType = 'app'
 const app = new Vue({
 	store,
@@ -46,6 +48,7 @@ export function createApp() {
 	app.config.globalProperties.$api = api
 	app.config.globalProperties.$wechat = WechatAPI
 	app.config.globalProperties.$auth = AuthManager
+	app.config.globalProperties.$config = config
 	return {
 		app,
 		Vuex, // 如果 nvue 使用 vuex 的各种map工具方法时，必须 return Vuex

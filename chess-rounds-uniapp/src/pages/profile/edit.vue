@@ -264,7 +264,7 @@ export default {
 					avatarUrl = '/static/images/default-avatar.png'
 				} else {
 					// 如果是完整URL，提取相对路径部分保存到后端
-					const baseURL = 'https://api.airoubo.com'
+					const baseURL = this.$config.staticBaseURL
 					if (avatarUrl.startsWith(baseURL)) {
 						avatarUrl = avatarUrl.substring(baseURL.length)
 					}

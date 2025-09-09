@@ -28,12 +28,12 @@
               <text class="section-title">回合累计</text>
               <text v-if="roundDetail.multiplier" class="multiplier-hint">倍率x{{ roundDetail.multiplier }}</text>
             </view>
-            <text class="section-subtitle">共{{ gameRecords.length }}局</text>
+            <text class="section-subtitle">共{{ Array.isArray(gameRecords) ? gameRecords.length : 0 }}局</text>
           </view>
           
           <view class="amounts-list">
             <!-- 台板累计 -->
-            <view v-if="roundDetail.hasTableBoard" class="amount-item-new table-board">
+            <view v-if="hasTableBoardParticipant" class="amount-item-new table-board">
               <image class="participant-avatar" src="/static/images/table-board.png" mode="aspectFill" />
               <view class="participant-info">
                 <text class="participant-name">台板</text>
@@ -50,9 +50,9 @@
               class="amount-item-new"
               :class="{ 'current-user': participant.id === currentUserId }"
             >
-              <image class="participant-avatar" :src="participant.avatar || '/static/images/default-avatar.png'" mode="aspectFill" />
+              <image class="participant-avatar" :src="getParticipantAvatarUrl(participant)" mode="aspectFill" />
               <view class="participant-info">
-                <text class="participant-name">{{ getParticipantName(participant.id) }}</text>
+                <text class="participant-name">{{ (participant.user_info && participant.user_info.nickname) || participant.name || '未知用户' }}</text>
                 <text class="participant-amount" :class="{ 'positive': participant.totalAmount > 0, 'negative': participant.totalAmount < 0 }">
                   {{ formatAmount(participant.totalAmount) }}
                 </text>
@@ -71,25 +71,24 @@
             </view>
           </view>
           
-          <view v-if="gameRecords.length === 0" class="empty-records">
+          <view v-if="!Array.isArray(gameRecords) || gameRecords.length === 0" class="empty-records">
             <text class="empty-text">暂无记录</text>
-            <text class="empty-hint">点击右侧添加按钮开始记录</text>
           </view>
           
           <view v-else class="records-list">
             <view 
-              v-for="(record, index) in gameRecords.slice().reverse()" 
+              v-for="(record, index) in (Array.isArray(gameRecords) ? gameRecords.slice().reverse() : [])" 
               :key="record.id"
               class="record-item"
             >
               <view class="record-header">
-                <text class="record-title">第{{ gameRecords.length - index }}局</text>
+                <text class="record-title">第{{ Array.isArray(gameRecords) ? gameRecords.length - index : 0 }}局</text>
                 <text class="record-time">{{ formatTime(record.createdAt) }}</text>
               </view>
               
               <view class="record-amounts-horizontal">
                 <!-- 台板记录 -->
-                <view v-if="roundDetail.hasTableBoard" class="record-amount-horizontal table-board">
+                <view v-if="hasTableBoardParticipant" class="record-amount-horizontal table-board">
                   <image class="amount-avatar" src="/static/images/table-board.png" mode="aspectFill" />
                   <view class="amount-info">
                     <text class="amount-name">台板</text>
@@ -120,13 +119,13 @@
     <uni-popup ref="addRecordPopup" type="bottom" background-color="#fff">
       <view class="add-record-modal">
         <view class="modal-header">
-          <text class="modal-title">添加第{{ gameRecords.length + 1 }}局记录</text>
+          <text class="modal-title">添加第{{ Array.isArray(gameRecords) ? gameRecords.length + 1 : 1 }}局记录</text>
         </view>
         
         <view class="modal-content">
           <view class="input-section">
             <!-- 台板输入 -->
-            <view v-if="roundDetail.hasTableBoard" class="input-item">
+            <view v-if="hasTableBoardParticipant" class="input-item">
               <text class="input-label">台板</text>
               <input 
                 v-model.number="newRecord.tableBoardAmount"
@@ -139,13 +138,13 @@
             
             <!-- 参与者输入 -->
             <view 
-              v-for="(participant, index) in participants" 
+              v-for="(participant, index) in participantsWithAmounts" 
               :key="participant.id"
               class="participant-input-item"
             >
               <view class="participant-info">
-                <image class="participant-avatar" :src="participant.avatar || '/static/images/default-avatar.png'" mode="aspectFill" />
-                <text class="participant-name">{{ getParticipantName(participant.id) }}</text>
+                <image class="participant-avatar" :src="getParticipantAvatarUrl(participant)" mode="aspectFill" />
+                <text class="participant-name">{{ (participant.user_info && participant.user_info.nickname) || participant.name || '未知用户' }}</text>
               </view>
               
               <view class="amount-input-group">
@@ -169,7 +168,7 @@
                    v-model.number="newRecord.participantAbsAmounts[participant.id]"
                    class="amount-input"
                    type="digit"
-                   placeholder="金额"
+                   placeholder="筹码数"
                    :data-participant-id="participant.id"
                    @input="onAmountInput"
                  />
@@ -204,6 +203,7 @@
 
 <script>
 import { roundsApi, handleApiError } from '@/api/rounds'
+import config from '@/config/api'
 
 export default {
   name: 'RoundDetail',
@@ -237,44 +237,67 @@ export default {
         finished: '已结束',
         cancelled: '已取消'
       }
-      return statusMap[this.roundDetail?.status] || '未知'
+      return statusMap[(this.roundDetail && this.roundDetail.status)] || '未知'
     },
     
     statusClass() {
-      return `status-${this.roundDetail?.status || 'unknown'}`
+      return `status-${(this.roundDetail && this.roundDetail.status) || 'unknown'}`
     },
     
     isCreator() {
-      return this.roundDetail?.creator?.id === this.currentUserId
+      return (this.roundDetail && this.roundDetail.creator && this.roundDetail.creator.id) === this.currentUserId
     },
     
     isParticipant() {
-      return this.participants.some(p => p.id === this.currentUserId)
+      return this.participants.some(p => {
+        const participantUserId = (p.user_info && p.user_info.user_id) || p.id
+        return participantUserId == this.currentUserId
+      })
     },
     
     canAddRecord() {
-      return (this.roundDetail?.status === 'playing' || this.roundDetail?.status === 'in_progress') && this.isParticipant
+      return ((this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress') && this.isParticipant
+    },
+    
+    // 检查是否有台板参与者
+    hasTableBoardParticipant() {
+      return Array.isArray(this.participants) && 
+             this.participants.some(p => p.id === 'table-board' || p.role === 'table_board' || p.role === 'table')
     },
     
     // 计算台板累加金额（从参与者金额中获取台板数据）
     tableBoardAmount() {
+      if (!Array.isArray(this.gameRecords)) {
+        return 0
+      }
       return this.gameRecords.reduce((total, record) => {
         // 台板金额是负值，取绝对值作为累计
-        return total + Math.abs(record.participantAmounts?.['table-board'] || 0)
+        return total + Math.abs((record.participantAmounts && record.participantAmounts['table-board']) || 0)
       }, 0)
     },
     
     // 计算参与者累加金额
     participantsWithAmounts() {
+      if (!Array.isArray(this.participants)) {
+        return []
+      }
       return this.participants.map(participant => {
-        const totalAmount = this.gameRecords.reduce((total, record) => {
-          // mock数据中participantAmounts是对象格式 {userId: amount}
-          const amount = record.participantAmounts?.[participant.id] || 0
-          return total + amount
-        }, 0)
+        let totalAmount = 0
+        if (Array.isArray(this.gameRecords)) {
+          totalAmount = this.gameRecords.reduce((total, record) => {
+            // 使用participant_id或id进行匹配
+            const participantId = participant.participant_id || participant.id
+            const amount = (record.participantAmounts && record.participantAmounts[participantId]) || 0
+            return total + amount
+          }, 0)
+        }
         
         return {
           ...participant,
+          id: participant.participant_id || participant.id, // 统一使用participant_id
+          user_id: participant.user_id, // 确保包含user_id字段
+          name: (participant.user_info && participant.user_info.nickname) || participant.name,
+          avatar: (participant.user_info && participant.user_info.avatar_url) || participant.avatar,
           totalAmount
         }
       })
@@ -292,7 +315,7 @@ export default {
       let total = this.newRecord.tableBoardAmount || 0
       
       // 加上所有参与者金额
-      this.participants.forEach((participant) => {
+      this.participantsWithAmounts.forEach((participant) => {
         const amount = this.newRecord.participantAmounts[participant.id]
         total += amount === '' ? 0 : Number(amount || 0)
       })
@@ -303,7 +326,10 @@ export default {
     // 检查当前用户是否已参与回合
     isCurrentUserParticipant() {
       if (!this.currentUserId || !this.participants) return false
-      return this.participants.some(p => p.id === this.currentUserId)
+      return this.participants.some(p => {
+        const participantUserId = (p.user_info && p.user_info.user_id) || p.id
+        return participantUserId == this.currentUserId
+      })
     }
   },
   
@@ -321,10 +347,12 @@ export default {
       if (match) {
         this.roundId = match[1]
       }
+      // 扫码进入时自动设置为需要加入回合
+      this.autoJoin = true
+    } else {
+      // 检查是否需要自动加入回合
+      this.autoJoin = options.autoJoin === 'true'
     }
-    
-    // 检查是否需要自动加入回合
-    this.autoJoin = options.autoJoin === 'true'
     
     if (this.roundId) {
       this.loadRoundDetail()
@@ -360,16 +388,51 @@ export default {
           roundsApi.getGameRecords(this.roundId)
         ])
         
-        if (roundRes.code === 200) {
-          this.roundDetail = roundRes.data
+        // 调试日志
+        console.log('API响应数据:', {
+          roundRes,
+          participantsRes,
+          recordsRes
+        })
+        
+        // 适配后端响应格式：可能直接返回数据，也可能包装在 {code, data} 中
+        if (roundRes) {
+          this.roundDetail = roundRes.code === 200 ? roundRes.data : roundRes
+          console.log('解析后的roundDetail:', this.roundDetail)
         }
         
-        if (participantsRes.code === 200) {
-          this.participants = participantsRes.data || []
+        if (participantsRes) {
+          this.participants = (participantsRes.code === 200 ? participantsRes.data : participantsRes) || []
+          console.log('解析后的participants:', this.participants)
         }
         
-        if (recordsRes.code === 200) {
-          this.gameRecords = recordsRes.data || []
+        if (recordsRes) {
+          this.gameRecords = (recordsRes.code === 200 ? recordsRes.data : recordsRes) || []
+          console.log('解析后的gameRecords:', this.gameRecords)
+        }
+        
+        // 如果没有回合详情但有参与者数据，创建一个基本的回合详情对象
+        if (!this.roundDetail && this.participants.length > 0) {
+          console.log('创建临时回合详情对象')
+          // 检查参与者中是否有台板
+          const hasTableBoard = this.participants.some(p => p.id === 'table-board' || p.role === 'table_board' || p.role === 'table')
+          this.roundDetail = {
+            id: this.roundId,
+            name: `回合 ${this.roundId}`,
+            status: 'ACTIVE',
+            hasTableBoard: hasTableBoard,
+            multiplier: 1,
+            createdAt: new Date().toISOString()
+          }
+        }
+        
+        // 确保roundDetail有hasTableBoard字段
+        if (this.roundDetail && this.roundDetail.hasTableBoard === undefined) {
+          // 通过检查参与者或后端字段来设置hasTableBoard
+          const hasTableBoard = this.roundDetail.has_table || 
+                               this.roundDetail.hasTable || 
+                               this.participants.some(p => p.id === 'table-board' || p.role === 'table_board' || p.role === 'table')
+          this.roundDetail.hasTableBoard = hasTableBoard
         }
         
         // 设置当前用户ID（mock模式下使用默认值）
@@ -378,7 +441,7 @@ export default {
         // 显示加载成功提示
         if (this.roundDetail && this.participants.length > 0) {
           uni.showToast({
-            title: 'Mock数据加载成功',
+            title: '数据加载成功',
             icon: 'success',
             duration: 1500
           })
@@ -420,47 +483,53 @@ export default {
           console.log('用户已参与该回合，无需重复加入')
           uni.showToast({
             title: '您已在该回合中',
-            icon: 'success'
+            icon: 'success',
+            duration: 1500
           })
           return
         }
         
-        // 检查回合状态是否允许加入
-        if (this.roundDetail.status !== 'active') {
-          console.log('回合状态不允许加入:', this.roundDetail.status)
-          uni.showToast({
-            title: '该回合已无法加入',
-            icon: 'none'
-          })
-          return
-        }
+        console.log('尝试自动加入回合:', this.roundId)
         
-        console.log('开始自动加入回合:', this.roundId)
+        // 调用加入回合接口
+        const joinResult = await roundsApi.joinRound(this.roundId)
+        console.log('加入回合结果:', joinResult)
         
-        // 调用加入回合API
-        const response = await roundsApi.joinRound(this.roundId)
+        // 后端返回空响应体，只要没有抛出异常就表示成功
+        uni.showToast({
+          title: '成功加入回合',
+          icon: 'success',
+          duration: 1500
+        })
         
-        if (response.code === 200) {
-          uni.showToast({
-            title: '成功加入回合',
-            icon: 'success'
-          })
-          
-          // 重新加载回合详情以更新参与者列表
-          setTimeout(() => {
-            this.loadRoundDetail()
-          }, 1000)
-        } else {
-          throw new Error(response.message || '加入回合失败')
-        }
+        // 重新加载参与者数据
+        await this.refreshParticipants()
         
       } catch (error) {
         console.error('自动加入回合失败:', error)
         uni.showToast({
           title: error.message || '加入回合失败',
-          icon: 'none',
+          icon: 'error',
           duration: 2000
         })
+      }
+    },
+    
+    /**
+     * 刷新参与者数据
+     */
+    async refreshParticipants() {
+      try {
+        const participantsRes = await roundsApi.getRoundParticipants(this.roundId)
+        console.log('刷新参与者数据:', participantsRes)
+        
+        if (participantsRes) {
+          this.participants = (participantsRes.code === 200 ? participantsRes.data : participantsRes) || []
+          console.log('更新后的participants:', this.participants)
+        }
+      } catch (error) {
+        console.error('刷新参与者数据失败:', error)
+        handleApiError(error, '刷新参与者数据失败')
       }
     },
     
@@ -470,8 +539,8 @@ export default {
         // 只重新获取游戏记录来更新累计数值
         const recordsRes = await roundsApi.getGameRecords(this.roundId)
         
-        if (recordsRes.code === 200) {
-          this.gameRecords = recordsRes.data || []
+        if (recordsRes) {
+          this.gameRecords = (recordsRes.code === 200 ? recordsRes.data : recordsRes) || []
           
           // 显示刷新成功提示
           uni.showToast({
@@ -503,7 +572,7 @@ export default {
       }
       
       // 初始化参与者金额和符号
-      this.participants.forEach(participant => {
+      this.participantsWithAmounts.forEach(participant => {
         this.$set(this.newRecord.participantAmounts, participant.id, '')
         this.$set(this.newRecord.participantAbsAmounts, participant.id, '')
         this.$set(this.newRecord.participantSigns, participant.id, '+')
@@ -547,20 +616,20 @@ export default {
     // 判断是否应该自动计算
     shouldAutoCalculate(participantId) {
       // 统计已输入金额的参与者数量
-      const enteredCount = this.participants.filter(p => {
+      const enteredCount = this.participantsWithAmounts.filter(p => {
         const absAmount = this.newRecord.participantAbsAmounts[p.id]
         return absAmount !== undefined && absAmount !== null && absAmount !== '' && !isNaN(Number(absAmount))
       }).length
       
       // 当只剩一个参与者未输入时，该参与者自动计算
-      const totalParticipants = this.participants.length
+      const totalParticipants = this.participantsWithAmounts.length
       const shouldAuto = enteredCount === totalParticipants - 1
       
       if (shouldAuto) {
         // 找到最后一个未输入的参与者（最后一个为空字符的参与者）
         let lastUnenteredParticipant = null
-        for (let i = this.participants.length - 1; i >= 0; i--) {
-          const p = this.participants[i]
+        for (let i = this.participantsWithAmounts.length - 1; i >= 0; i--) {
+          const p = this.participantsWithAmounts[i]
           const absAmount = this.newRecord.participantAbsAmounts[p.id]
           if (absAmount === undefined || absAmount === null || absAmount === '') {
             lastUnenteredParticipant = p
@@ -583,21 +652,21 @@ export default {
     // 金额输入处理
     onAmountInput() {
       // 更新所有参与者的实际金额
-      this.participants.forEach(participant => {
+      this.participantsWithAmounts.forEach(participant => {
         this.updateParticipantAmount(participant.id)
       })
       
       // 检查是否需要自动计算最后一个参与者
-      const enteredCount = this.participants.filter(p => {
+      const enteredCount = this.participantsWithAmounts.filter(p => {
         const absAmount = this.newRecord.participantAbsAmounts[p.id]
         return absAmount !== undefined && absAmount !== null && absAmount !== '' && !isNaN(Number(absAmount))
       }).length
       
-      if (enteredCount === this.participants.length - 1) {
+      if (enteredCount === this.participantsWithAmounts.length - 1) {
         // 找到最后一个未输入的参与者
         let lastUnenteredParticipant = null
-        for (let i = this.participants.length - 1; i >= 0; i--) {
-          const p = this.participants[i]
+        for (let i = this.participantsWithAmounts.length - 1; i >= 0; i--) {
+          const p = this.participantsWithAmounts[i]
           const absAmount = this.newRecord.participantAbsAmounts[p.id]
           if (absAmount === undefined || absAmount === null || absAmount === '') {
             lastUnenteredParticipant = p
@@ -607,7 +676,7 @@ export default {
         
         if (lastUnenteredParticipant) {
           // 计算最后一个参与者应该的金额
-          const totalOthers = this.participants
+          const totalOthers = this.participantsWithAmounts
             .filter(p => p.id !== lastUnenteredParticipant.id)
             .reduce((sum, p) => {
               const amount = this.newRecord.participantAmounts[p.id]
@@ -645,12 +714,36 @@ export default {
         
         // 构建记录数据 - 适配mock数据格式
         const participantAmounts = {}
-        this.participants.forEach((participant) => {
+        this.participantsWithAmounts.forEach((participant) => {
           const amount = this.newRecord.participantAmounts[participant.id]
           participantAmounts[participant.id] = amount === '' ? 0 : Number(amount || 0)
         })
         
+        // 构造participant_records数据
+        console.log('participantsWithAmounts:', this.participantsWithAmounts)
+        const participantRecords = this.participantsWithAmounts.map((participant) => {
+          const amount = this.newRecord.participantAmounts[participant.id]
+          // 从原始participants数组中查找对应的user_id
+          const originalParticipant = this.participants.find(p => 
+            (p.participant_id || p.id) === participant.id
+          )
+          const userId = originalParticipant ? originalParticipant.user_id : null
+          console.log('participant:', participant, 'originalParticipant:', originalParticipant, 'user_id:', userId)
+          return {
+            user_id: userId,
+            amount_change: amount === '' ? 0 : Number(amount || 0)
+          }
+        })
+        console.log('participantRecords:', participantRecords)
+        
         const recordData = {
+          round_id: this.roundId,
+          record_type: 'WIN', // 默认设置为胜利类型，可根据实际需求调整
+          description: '游戏记录',
+          total_amount: 0, // 可根据实际需求计算总金额
+          participant_records: participantRecords,
+          remarks: '',
+          // 保留原有字段用于兼容
           roundId: this.roundId,
           tableBoardAmount: this.newRecord.tableBoardAmount,
           participantAmounts
@@ -658,7 +751,9 @@ export default {
         
         const response = await roundsApi.addGameRecord(recordData)
         
-        if (response.code === 200) {
+        // 适配后端响应格式
+        const success = response && (response.code === 200 || response.success || !response.code)
+        if (success) {
           uni.showToast({
             title: '记录添加成功',
             icon: 'success'
@@ -678,14 +773,29 @@ export default {
     
     // 获取参与者姓名
     getParticipantName(participantId) {
-      const participant = this.participants.find(p => p.id === participantId)
-      return participant ? participant.name : '未知用户'
+      const participant = this.participants.find(p => p.id === participantId || p.participant_id === participantId)
+      if (participant) {
+        // 适配新的API格式：用户信息在user_info中
+        return (participant.user_info && participant.user_info.nickname) || participant.name || '未知用户'
+      }
+      return '未知用户'
     },
     
     // 获取参与者头像
     getParticipantAvatar(participantId) {
-      const participant = this.participants.find(p => p.id === participantId)
-      return participant ? (participant.avatar || '/static/images/default-avatar.png') : '/static/images/default-avatar.png'
+      const participant = this.participants.find(p => p.id === participantId || p.participant_id === participantId)
+      if (participant) {
+        // 适配新的API格式：用户信息在user_info中
+        const avatarUrl = (participant.user_info && participant.user_info.avatar_url) || participant.avatar
+        // 处理相对路径的头像URL
+        if (avatarUrl && avatarUrl.startsWith('/static/')) {
+          const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
+          console.log('头像URL拼接:', baseURL, avatarUrl)
+          return baseURL + avatarUrl
+        }
+        return avatarUrl || '/static/images/default-avatar.png'
+      }
+      return '/static/images/default-avatar.png'
     },
     
     // 格式化金额显示
@@ -698,6 +808,25 @@ export default {
       if (!timestamp) return ''
       const date = new Date(timestamp)
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    },
+    
+    // 获取参与者头像URL
+    getParticipantAvatarUrl(participant) {
+      if (!participant) {
+        return '/static/images/default-avatar.png'
+      }
+      
+      // 适配新的API格式：用户信息在user_info中
+      const avatarUrl = (participant.user_info && participant.user_info.avatar_url) || participant.avatar
+      
+      // 处理相对路径的头像URL
+      if (avatarUrl && avatarUrl.startsWith('/static/')) {
+        const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
+        console.log('参与者头像URL拼接:', baseURL, avatarUrl)
+        return baseURL + avatarUrl
+      }
+      
+      return avatarUrl || '/static/images/default-avatar.png'
     },
     
 

@@ -5,6 +5,8 @@ import com.airoubo.chessrounds.dto.round.ParticipantInfoResponse;
 import com.airoubo.chessrounds.dto.round.RoundInfoResponse;
 import com.airoubo.chessrounds.service.RoundService;
 import com.airoubo.chessrounds.service.WechatApiService;
+
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -70,11 +72,12 @@ public class RoundController {
      */
     @GetMapping("/code/{roundCode}")
     public ResponseEntity<RoundInfoResponse> getRoundByCode(@PathVariable String roundCode) {
-        Optional<RoundInfoResponse> round = roundService.getRoundByCode(roundCode);
-        return round.map(ResponseEntity::ok)
+        Optional<RoundInfoResponse> response = roundService.getRoundByCode(roundCode);
+        return response.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
     
+
     /**
      * 加入回合
      * 
@@ -109,14 +112,18 @@ public class RoundController {
      * 开始回合
      * 
      * @param roundId 回合ID
-     * @param userId 用户ID（必须是创建者）
+     * @param requestBody 请求体，包含台板信息
+     * @param userId 用户ID
      * @return 操作结果
      */
     @PostMapping("/{roundId}/start")
     public ResponseEntity<Void> startRound(
             @PathVariable Long roundId,
+            @RequestBody Map<String, Object> requestBody,
             @RequestHeader("User-Id") Long userId) {
-        roundService.startRound(roundId, userId);
+        Boolean hasTable = (Boolean) requestBody.get("hasTable");
+        // tableUserId不再需要，台板用户由后端自动创建
+        roundService.startRound(roundId, userId, hasTable, null);
         return ResponseEntity.ok().build();
     }
     

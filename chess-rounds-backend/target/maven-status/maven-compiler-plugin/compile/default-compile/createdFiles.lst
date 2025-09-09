@@ -18,15 +18,18 @@ com/airoubo/chessrounds/entity/BaseEntity.class
 com/airoubo/chessrounds/enums/RatingType.class
 com/airoubo/chessrounds/config/SecurityConfig.class
 com/airoubo/chessrounds/dto/user/UserLoginRequest.class
+com/airoubo/chessrounds/repository/ParticipantRecordRepository.class
 com/airoubo/chessrounds/controller/RoundController.class
 com/airoubo/chessrounds/dto/user/UserInfoResponse.class
 com/airoubo/chessrounds/util/JwtUtil.class
 com/airoubo/chessrounds/entity/Round.class
+com/airoubo/chessrounds/config/RestTemplateConfig$1.class
 com/airoubo/chessrounds/enums/StatType.class
 com/airoubo/chessrounds/service/impl/RoundServiceImpl.class
 com/airoubo/chessrounds/dto/user/UserLoginResponse.class
 com/airoubo/chessrounds/enums/ConfigType.class
 com/airoubo/chessrounds/security/CustomUserDetailsService$CustomUserPrincipal.class
+com/airoubo/chessrounds/entity/ParticipantRecord.class
 com/airoubo/chessrounds/entity/UserRelationship.class
 com/airoubo/chessrounds/enums/RoundStatus.class
 com/airoubo/chessrounds/util/ResponseUtil$ApiResponse.class
@@ -55,6 +58,7 @@ com/airoubo/chessrounds/enums/ParticipantRole.class
 com/airoubo/chessrounds/dto/record/CreateRecordRequest.class
 com/airoubo/chessrounds/util/ResponseUtil.class
 com/airoubo/chessrounds/service/SystemConfigService.class
+com/airoubo/chessrounds/config/OkHttpConfig.class
 com/airoubo/chessrounds/dto/round/ParticipantInfoResponse.class
 com/airoubo/chessrounds/service/SystemConfigService$ConfigKeys.class
 com/airoubo/chessrounds/security/JwtAuthenticationFilter.class

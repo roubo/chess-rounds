@@ -1,11 +1,5 @@
 // API配置和请求工具
-const config = {
-	// 开发环境
-	// baseURL: 'http://localhost:8080/api',
-	// 生产环境
-	baseURL: 'https://api.airoubo.com/api',
-	timeout: 10000
-}
+import config from '@/config/api.js'
 
 /**
  * 发起网络请求
