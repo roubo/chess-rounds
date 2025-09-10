@@ -47,6 +47,12 @@ $chess-bg-primary: #faf8f3; // 主背景色
 $chess-bg-card: #ffffff; // 卡片背景色
 $chess-bg-active: rgba(212, 175, 55, 0.1); // 激活状态背景
 
+/* TabBar 主题色彩 */
+$tabbar-bg-color: #F8F9FC; // TabBar背景色 - 与顶部呼应的浅蓝灰
+$tabbar-text-color: #8B9BB5; // TabBar文字颜色 - 中性蓝灰
+$tabbar-active-color: #5D688A; // TabBar激活颜色 - 与导航栏一致
+$tabbar-border-color: #E8EAF0; // TabBar边框颜色 - 柔和分割线
+
 /* 边框颜色 */
 $uni-border-color:#e5e5e5;
 $chess-border-color: #d4af37; // 象棋主题边框色

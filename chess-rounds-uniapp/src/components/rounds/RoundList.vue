@@ -94,6 +94,13 @@ export default {
 	onLoad() {
 		this.loadRounds()
 	},
+	onShow() {
+		// 页面显示时重新加载数据，确保数据是最新的
+		// 只有在已有数据的情况下才刷新，避免首次加载时的重复请求
+		if (this.rounds.length > 0) {
+			this.loadRounds()
+		}
+	},
 	computed: {
 		// 我的回合（参与者或创建者，且participants不为空）
 		myRounds() {

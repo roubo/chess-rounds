@@ -46,7 +46,7 @@ public class RoundController {
     @PostMapping
     public ResponseEntity<RoundInfoResponse> createRound(
             @RequestBody CreateRoundRequest createRequest,
-            @RequestHeader("User-Id") Long creatorId) {
+            @RequestHeader("user-id") Long creatorId) {
         RoundInfoResponse response = roundService.createRound(createRequest, creatorId);
         return ResponseEntity.ok(response);
     }
@@ -88,7 +88,7 @@ public class RoundController {
     @PostMapping("/{roundId}/join")
     public ResponseEntity<Void> joinRound(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         roundService.joinRound(roundId, userId);
         return ResponseEntity.ok().build();
     }
@@ -103,7 +103,7 @@ public class RoundController {
     @PostMapping("/{roundId}/leave")
     public ResponseEntity<Void> leaveRound(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         roundService.leaveRound(roundId, userId);
         return ResponseEntity.ok().build();
     }
@@ -120,7 +120,7 @@ public class RoundController {
     public ResponseEntity<Void> startRound(
             @PathVariable Long roundId,
             @RequestBody Map<String, Object> requestBody,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         Boolean hasTable = (Boolean) requestBody.get("hasTable");
         // tableUserId不再需要，台板用户由后端自动创建
         roundService.startRound(roundId, userId, hasTable, null);
@@ -137,7 +137,7 @@ public class RoundController {
     @PostMapping("/{roundId}/end")
     public ResponseEntity<Void> endRound(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         roundService.endRound(roundId, userId);
         return ResponseEntity.ok().build();
     }
@@ -149,10 +149,10 @@ public class RoundController {
      * @param userId 用户ID（必须是创建者）
      * @return 操作结果
      */
-    @PostMapping("/{roundId}/pause")
+    @PutMapping("/{roundId}/pause")
     public ResponseEntity<Void> pauseRound(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         roundService.pauseRound(roundId, userId);
         return ResponseEntity.ok().build();
     }
@@ -161,14 +161,29 @@ public class RoundController {
      * 恢复回合
      * 
      * @param roundId 回合ID
-     * @param userId 用户ID（必须是创建者）
-     * @return 操作结果
+     * @param userId 用户ID
+     * @return 响应
      */
     @PostMapping("/{roundId}/resume")
     public ResponseEntity<Void> resumeRound(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         roundService.resumeRound(roundId, userId);
+        return ResponseEntity.ok().build();
+    }
+    
+    /**
+     * 删除回合
+     * 
+     * @param roundId 回合ID
+     * @param userId 用户ID
+     * @return 响应
+     */
+    @DeleteMapping("/{roundId}")
+    public ResponseEntity<Void> deleteRound(
+            @PathVariable Long roundId,
+            @RequestHeader("user-id") Long userId) {
+        roundService.deleteRound(roundId, userId);
         return ResponseEntity.ok().build();
     }
     
@@ -193,7 +208,7 @@ public class RoundController {
      */
     @GetMapping("/my")
     public ResponseEntity<Page<RoundInfoResponse>> getUserRounds(
-            @RequestHeader("User-Id") Long userId,
+            @RequestHeader("user-id") Long userId,
             Pageable pageable) {
         Page<RoundInfoResponse> rounds = roundService.getUserRounds(userId, pageable);
         return ResponseEntity.ok(rounds);
@@ -208,7 +223,7 @@ public class RoundController {
      */
     @GetMapping("/created")
     public ResponseEntity<Page<RoundInfoResponse>> getUserCreatedRounds(
-            @RequestHeader("User-Id") Long userId,
+            @RequestHeader("user-id") Long userId,
             Pageable pageable) {
         Page<RoundInfoResponse> rounds = roundService.getCreatedRounds(userId, pageable);
         return ResponseEntity.ok(rounds);

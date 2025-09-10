@@ -21,44 +21,74 @@ export const mockRoundData = {
 	// 参与者信息
 	participants: [
 		{
+			participant_id: '1',
 			id: '1',
 			name: '张三',
 			avatar: '/static/avatar1.png',
 			role: 'creator', // creator, participant
 			status: 'active', // active, inactive
-			joinedAt: '2025-01-08T10:00:00Z'
+			joinedAt: '2025-01-08T10:00:00Z',
+			user_info: {
+				user_id: '1',
+				nickname: '张三',
+				avatar_url: '/static/avatar1.png'
+			}
 		},
 		{
+			participant_id: 'user-002',
 			id: 'user-002',
 			name: '李四',
 			avatar: '/static/avatar2.png',
 			role: 'participant',
 			status: 'active',
-			joinedAt: '2025-01-08T10:05:00Z'
+			joinedAt: '2025-01-08T10:05:00Z',
+			user_info: {
+				user_id: 'user-002',
+				nickname: '李四',
+				avatar_url: '/static/avatar2.png'
+			}
 		},
 		{
+			participant_id: 'user-003',
 			id: 'user-003',
 			name: '王五',
 			avatar: '/static/avatar3.png',
 			role: 'participant',
 			status: 'active',
-			joinedAt: '2025-01-08T10:08:00Z'
+			joinedAt: '2025-01-08T10:08:00Z',
+			user_info: {
+				user_id: 'user-003',
+				nickname: '王五',
+				avatar_url: '/static/avatar3.png'
+			}
 		},
 		{
+			participant_id: 'user-004',
 			id: 'user-004',
 			name: '赵六',
 			avatar: '/static/avatar4.png',
 			role: 'participant',
 			status: 'active',
-			joinedAt: '2025-01-08T10:12:00Z'
+			joinedAt: '2025-01-08T10:12:00Z',
+			user_info: {
+				user_id: 'user-004',
+				nickname: '赵六',
+				avatar_url: '/static/avatar4.png'
+			}
 		},
 		{
+			participant_id: 'table-board',
 			id: 'table-board',
 			name: '台板',
-			avatar: '/static/table-board.png',
+			avatar: '/static/images/default-avatar.png',
 			role: 'table_board', // 特殊角色：台板
 			status: 'active',
-			joinedAt: '2025-01-08T10:00:00Z'
+			joinedAt: '2025-01-08T10:00:00Z',
+			user_info: {
+				user_id: 'table-board',
+				nickname: '台板',
+				avatar_url: '/static/images/default-avatar.png'
+			}
 		}
 	],
 

@@ -107,6 +107,14 @@
 			</button>
 			<button 
 				v-if="createdRoundId"
+				class="btn-danger btn-block" 
+				@click="handleCloseRound"
+				:disabled="isClosing"
+			>
+				{{ isClosing ? '关闭中...' : '关闭回合' }}
+			</button>
+			<button 
+				v-if="createdRoundId"
 				class="btn-primary btn-block" 
 				@click="handleStartRound"
 				:disabled="!canStartRound || isStarting"
@@ -135,6 +143,7 @@ export default {
 		},
 		isCreating: false,
 		isStarting: false,
+		isClosing: false,
 		isRefreshing: false,
 		createdRoundId: null,
 		qrSize: 135,
@@ -202,6 +211,12 @@ export default {
 			await this.autoCreateRound()
 		}
 	},
+	onShow() {
+		// 页面显示时重新加载数据，确保数据是最新的
+		if (this.isEditMode && this.createdRoundId) {
+			this.loadExistingRound(this.createdRoundId)
+		}
+	},
 	onUnload() {
 		// 清理定时器
 		if (this.refreshTimer) {
@@ -212,6 +227,11 @@ export default {
 		// 获取头像URL
 		getAvatarUrl(participant) {
 			if (!participant) return ''
+			
+			// 台板始终使用默认头像
+			if (participant.id === 'table-board' || participant.role === 'table_board' || participant.role === 'table') {
+				return '/static/images/default-avatar.png'
+			}
 			
 			// 处理嵌套的user_info结构
 			const userInfo = participant.user_info || participant
@@ -451,6 +471,63 @@ export default {
 		// 取消创建
 		handleCancel() {
 			uni.navigateBack()
+		},
+		
+		// 关闭回合
+		async handleCloseRound() {
+			if (!this.createdRoundId) {
+				return
+			}
+			
+			try {
+				// 确认对话框
+				const confirmResult = await new Promise((resolve) => {
+					uni.showModal({
+						title: '确认关闭',
+						content: '确定要关闭这个回合吗？关闭后将无法恢复。',
+						confirmText: '确定关闭',
+						cancelText: '取消',
+						confirmColor: '#ff4757',
+						success: (res) => {
+							resolve(res.confirm)
+						}
+					})
+				})
+				
+				if (!confirmResult) {
+					return
+				}
+				
+				this.isClosing = true
+				
+				// 停止定时刷新
+				if (this.refreshTimer) {
+					clearInterval(this.refreshTimer)
+					this.refreshTimer = null
+				}
+				
+				// 调用删除API
+				await roundsApi.deleteRound(this.createdRoundId)
+				
+				uni.showToast({
+					title: '回合已关闭',
+					icon: 'success'
+				})
+				
+				// 返回上一页
+				setTimeout(() => {
+					uni.navigateBack()
+				}, 1500)
+				
+			} catch (error) {
+				console.error('关闭回合失败:', error)
+				uni.showToast({
+					title: error.message || '关闭回合失败',
+					icon: 'error'
+				})
+			} finally {
+				this.isClosing = false
+			}
 		},
 		
 		// 生成小程序码
@@ -942,6 +1019,41 @@ export default {
 	background: #d4af37;
 	color: #fff;
 	transition: all 0.3s ease;
+}
+
+// 按钮样式
+.btn-danger {
+	background: #ff4757;
+	color: #fff;
+	border: none;
+	border-radius: 14rpx;
+	height: 92rpx;
+	font-size: 32rpx;
+	font-weight: 500;
+	transition: all 0.3s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	box-shadow: 0 2rpx 8rpx rgba(255, 71, 87, 0.3);
+	
+	&:disabled {
+		background: #ffb3ba;
+		color: #fff;
+		opacity: 0.6;
+		transform: none;
+	}
+	
+	&:active {
+		background: #ff3742;
+		transform: translateY(2rpx);
+		opacity: 0.9;
+	}
+}
+
+.btn-block {
+	width: 100%;
+	margin: 8rpx 0;
 	
 	&.secondary {
 		background: #f5f5f5;

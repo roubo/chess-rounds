@@ -48,7 +48,13 @@ public class ParticipantInfoResponse implements Serializable {
     private BigDecimal currentAmount;
     
     /**
-     * 总投入金额
+     * 累计金额
+     */
+    @JsonProperty("total_amount")
+    private Double totalAmount;
+    
+    /**
+     * 总下注金额
      */
     @JsonProperty("total_bet_amount")
     private BigDecimal totalBetAmount;
@@ -143,6 +149,14 @@ public class ParticipantInfoResponse implements Serializable {
     
     public void setCurrentAmount(BigDecimal currentAmount) {
         this.currentAmount = currentAmount;
+    }
+    
+    public Double getTotalAmount() {
+        return totalAmount;
+    }
+    
+    public void setTotalAmount(Double totalAmount) {
+        this.totalAmount = totalAmount;
     }
     
     public BigDecimal getTotalBetAmount() {

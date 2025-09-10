@@ -190,6 +190,109 @@
   }
 }
 
+/* 自定义Toast样式 */
+.custom-toast-container {
+  position: fixed;
+  bottom: 200rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.3s ease;
+  
+  &.toast-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  
+  &.toast-hide {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20rpx);
+  }
+}
+
+.custom-toast {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 24rpx 32rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  max-width: 600rpx;
+  min-width: 200rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10rpx);
+  
+  &.toast-success {
+    background-color: rgba(76, 175, 80, 0.9);
+  }
+  
+  &.toast-error {
+    background-color: rgba(244, 67, 54, 0.9);
+  }
+  
+  &.toast-warning {
+    background-color: rgba(255, 152, 0, 0.9);
+  }
+  
+  &.toast-default {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+}
+
+.toast-icon {
+  margin-right: 16rpx;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .customicons {
+    font-size: 32rpx;
+  }
+}
+
+.toast-text {
+  font-size: 28rpx;
+  line-height: 1.4;
+  text-align: center;
+  word-break: break-all;
+}
+
+/* Toast动画 */
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(40rpx);
+  }
+}
+
+.custom-toast-container.toast-show .custom-toast {
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+.custom-toast-container.toast-hide .custom-toast {
+  animation: toastSlideDown 0.3s ease-in;
+}
+
 /* 响应式设计 */
 @media screen and (max-width: 750rpx) {
   .container {
@@ -203,5 +306,24 @@
   
   .card-title {
     font-size: 28rpx;
+  }
+  
+  .custom-toast {
+    font-size: 26rpx;
+    padding: 20rpx 28rpx;
+    max-width: 500rpx;
+  }
+  
+  .toast-icon {
+    margin-right: 12rpx;
+    font-size: 28rpx;
+    
+    .customicons {
+      font-size: 28rpx;
+    }
+  }
+  
+  .toast-text {
+    font-size: 26rpx;
   }
 }

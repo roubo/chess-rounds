@@ -38,9 +38,12 @@ export default {
 	onShow() {
 		// 页面显示时检查登录状态和刷新数据
 		this.checkAndLoadUserInfo()
-		if (this.userInfo && this.$refs.roundList) {
-			this.$refs.roundList.refresh()
-		}
+		// 使用nextTick确保组件已经渲染完成
+		this.$nextTick(() => {
+			if (this.userInfo && this.$refs.roundList) {
+				this.$refs.roundList.refresh()
+			}
+		})
 	},
 	
 	// 下拉刷新

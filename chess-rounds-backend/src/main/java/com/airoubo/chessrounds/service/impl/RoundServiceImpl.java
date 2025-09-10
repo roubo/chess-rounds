@@ -19,6 +19,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +48,9 @@ public class RoundServiceImpl implements RoundService {
     
     @Autowired
     private UserService userService;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
     
     @Override
     public RoundInfoResponse createRound(CreateRoundRequest createRequest, Long creatorId) {
@@ -287,6 +295,9 @@ public class RoundServiceImpl implements RoundService {
             response.setJoinedAt(participant.getJoinedAt());
             response.setSeatNumber(participant.getSeatNumber());
             
+            // 计算参与者累计金额
+            response.setTotalAmount(calculateParticipantTotalAmount(roundId, participant.getUserId()));
+            
             // 获取用户信息
             Optional<UserInfoResponse> userInfo = userService.getUserById(participant.getUserId());
             if (userInfo.isPresent()) {
@@ -372,13 +383,39 @@ public class RoundServiceImpl implements RoundService {
             throw new RuntimeException("只有创建者可以删除回合");
         }
         
-        // 检查状态
-        if (RoundStatus.PLAYING.equals(round.getStatus())) {
-            throw new RuntimeException("进行中的回合不能删除");
+        // 检查状态 - 只允许删除等待中的回合
+        if (!RoundStatus.WAITING.equals(round.getStatus())) {
+            throw new RuntimeException("只能删除等待中的回合");
         }
         
-        // TODO: 删除相关的参与者记录和游戏记录
-        roundRepository.delete(round);
+        // 删除相关的所有记录
+        // 1. 删除参与者记录
+        participantRepository.deleteByRoundId(roundId);
+        
+        // 2. 删除游戏记录（如果有的话）
+        // 注意：需要先删除子记录，再删除主记录
+        try {
+            // 删除参与者记录表
+            entityManager.createQuery("DELETE FROM ParticipantRecord pr WHERE pr.roundId = :roundId")
+                    .setParameter("roundId", roundId)
+                    .executeUpdate();
+            
+            // 删除游戏记录表
+            entityManager.createQuery("DELETE FROM Record r WHERE r.roundId = :roundId")
+                    .setParameter("roundId", roundId)
+                    .executeUpdate();
+            
+            // 删除评分记录
+            entityManager.createQuery("DELETE FROM Rating rt WHERE rt.roundId = :roundId")
+                    .setParameter("roundId", roundId)
+                    .executeUpdate();
+        } catch (Exception e) {
+            // 如果删除相关记录失败，记录日志但继续删除回合
+            System.err.println("删除回合相关记录时出错: " + e.getMessage());
+        }
+        
+        // 3. 删除回合记录
+         roundRepository.delete(round);
     }
     
     @Override
@@ -508,17 +545,34 @@ public class RoundServiceImpl implements RoundService {
     }
     
     /**
+     * 计算参与者在指定回合中的累计金额
+     */
+    private Double calculateParticipantTotalAmount(Long roundId, Long userId) {
+        String sql = "SELECT COALESCE(SUM(pr.amount_change), 0) " +
+                    "FROM participant_records pr " +
+                    "WHERE pr.round_id = :roundId AND pr.user_id = :userId";
+        
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("roundId", roundId);
+        query.setParameter("userId", userId);
+        
+        Object result = query.getSingleResult();
+        if (result instanceof BigDecimal) {
+            return ((BigDecimal) result).doubleValue();
+        }
+        return 0.0;
+    }
+    
+    /**
      * 生成随机回合码
      */
     private String generateRandomCode() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder code = new StringBuilder();
         Random random = new Random();
-        
+        StringBuilder code = new StringBuilder();
         for (int i = 0; i < 6; i++) {
             code.append(chars.charAt(random.nextInt(chars.length())));
         }
-        
         return code.toString();
     }
 }

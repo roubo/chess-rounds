@@ -2,11 +2,7 @@
  * 回合相关API接口
  */
 
-import { mockRoundData, calculateParticipantTotals, calculateTotalTableBoard, mockApiDelay, generateRecordId, mockRoundsList, getUserRounds } from '@/mock/roundData'
 import config from '@/config/api.js'
-
-// 是否使用模拟数据
-const USE_MOCK_DATA = false
 
 // API基础URL
 const BASE_URL = config.baseURL
@@ -16,7 +12,7 @@ const getUserId = () => {
 	const userInfo = uni.getStorageSync('userInfo')
 	// 兼容不同的字段名：userId 或 user_id
 	const userId = userInfo && (userInfo.userId || userInfo.user_id)
-	return userId ? userId.toString() : (USE_MOCK_DATA ? 'user-001' : null)
+	return userId ? userId.toString() : null
 }
 
 // 通用请求方法
@@ -29,11 +25,11 @@ const request = (url, options = {}) => {
 			...options.header
 		}
 		
-		// 如果需要用户ID且用户已登录，自动添加User-Id请求头
+		// 如果需要用户ID且用户已登录，自动添加user-id请求头
 		if (options.requireUserId !== false) {
 			const userId = getUserId()
 			if (userId) {
-				headers['User-Id'] = userId
+				headers['user-id'] = userId
 			}
 		}
 		
@@ -60,14 +56,6 @@ const request = (url, options = {}) => {
 export const roundsApi = {
 	// 获取回合列表
 	async getRounds(params = {}) {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(300)
-			return {
-				code: 200,
-				message: 'success',
-				data: mockRoundsList
-			}
-		}
 		const query = Object.keys(params)
 			.map(key => `${key}=${encodeURIComponent(params[key])}`)
 			.join('&')
@@ -76,46 +64,11 @@ export const roundsApi = {
 
 	// 获取回合详情
 	async getRoundDetail(roundId) {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(300)
-			return {
-				code: 200,
-				message: 'success',
-				data: mockRoundData.roundInfo
-			}
-		}
 		return request(`/rounds/${roundId}`, { requireUserId: false })
 	},
 
 	// 创建回合
 	async createRound(roundData) {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(500)
-			// 模拟创建回合成功，返回与后端相同的数据结构
-			return {
-				code: 200,
-				message: 'success',
-				data: {
-					round_id: Math.floor(Math.random() * 1000) + 1,
-					round_code: Math.random().toString(36).substr(2, 6).toUpperCase(),
-					game_type: roundData.game_type || 'mahjong',
-					creator: {
-						user_id: 1,
-						openid: 'mock-openid',
-						nickname: '测试用户',
-						avatar_url: '/static/avatar1.png'
-					},
-					status: 'waiting',
-					max_participants: roundData.max_participants || 4,
-					base_amount: roundData.base_amount || 1,
-					has_table: roundData.has_table || false,
-					is_public: roundData.is_public || false,
-					allow_spectator: roundData.allow_spectator || true,
-					created_at: new Date().toISOString(),
-					participants: []
-				}
-			}
-		}
 		return request('/rounds', {
 			method: 'POST',
 			data: roundData
@@ -156,71 +109,21 @@ export const roundsApi = {
 
 	// 获取我的回合
 	async getMyRounds() {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(250)
-			const userId = getUserId()
-			const userRounds = getUserRounds(userId)
-			return {
-				code: 200,
-				message: 'success',
-				data: userRounds
-			}
-		}
-		const userId = getUserId()
-		if (!userId) {
-			return Promise.reject(new Error('用户未登录或用户信息不完整'))
-		}
 		return request('/rounds/my')
 	},
 
 	// 获取回合参与者
 	async getRoundParticipants(roundId) {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(200)
-			return {
-				code: 200,
-				message: 'success',
-				data: calculateParticipantTotals(mockRoundData.participants, mockRoundData.gameRecords)
-			}
-		}
 		return request(`/rounds/${roundId}/participants`, { requireUserId: false })
 	},
 
 	// 获取回合游戏记录
 	async getGameRecords(roundId) {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(250)
-			return {
-				code: 200,
-				message: 'success',
-				data: mockRoundData.gameRecords
-			}
-		}
 		return request(`/records/round/${roundId}`, { requireUserId: false })
 	},
 
 	// 添加游戏记录
 	async addGameRecord(recordData) {
-		if (USE_MOCK_DATA) {
-			await mockApiDelay(400)
-			// 模拟添加记录到mock数据
-			const newRecord = {
-				id: generateRecordId(),
-				roundId: recordData.roundId,
-				gameNumber: mockRoundData.gameRecords.length + 1,
-				tableBoardAmount: recordData.tableBoardAmount,
-				participantAmounts: recordData.participantAmounts,
-				createdAt: new Date().toISOString(),
-				createdBy: getUserId()
-			}
-			// 添加到mock数据中
-			mockRoundData.gameRecords.push(newRecord)
-			return {
-				code: 200,
-				message: 'success',
-				data: newRecord
-			}
-		}
 		return request('/records', {
 			method: 'POST',
 			data: recordData
@@ -229,7 +132,14 @@ export const roundsApi = {
 
 	// 删除游戏记录（管理员功能）
 	deleteGameRecord(recordId) {
-		return request(`/records/${recordId}`, {
+		return request(`/api/rounds/records/${recordId}`, {
+			method: 'DELETE'
+		})
+	},
+	
+	// 删除回合
+	deleteRound(roundId) {
+		return request(`/rounds/${roundId}`, {
 			method: 'DELETE'
 		})
 	}

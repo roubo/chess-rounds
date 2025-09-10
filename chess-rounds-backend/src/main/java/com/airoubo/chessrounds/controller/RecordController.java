@@ -37,7 +37,7 @@ public class RecordController {
     @PostMapping
     public ResponseEntity<RecordInfoResponse> createRecord(
             @RequestBody CreateRecordRequest createRequest,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         RecordInfoResponse response = recordService.createRecord(createRequest, userId);
         return ResponseEntity.ok(response);
     }
@@ -67,7 +67,7 @@ public class RecordController {
     public ResponseEntity<RecordInfoResponse> updateRecord(
             @PathVariable Long recordId,
             @RequestBody CreateRecordRequest createRequest,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         RecordInfoResponse response = recordService.updateRecord(recordId, createRequest, userId);
         return ResponseEntity.ok(response);
     }
@@ -82,7 +82,7 @@ public class RecordController {
     @DeleteMapping("/{recordId}")
     public ResponseEntity<Void> deleteRecord(
             @PathVariable Long recordId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         recordService.deleteRecord(recordId, userId);
         return ResponseEntity.ok().build();
     }
@@ -97,7 +97,7 @@ public class RecordController {
     @DeleteMapping("/batch")
     public ResponseEntity<Void> deleteRecords(
             @RequestParam List<Long> recordIds,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         recordService.deleteRecords(recordIds, userId);
         return ResponseEntity.ok().build();
     }
@@ -128,7 +128,7 @@ public class RecordController {
     @GetMapping("/round/{roundId}/user")
     public ResponseEntity<Page<RecordInfoResponse>> getUserRoundRecords(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId,
+            @RequestHeader("user-id") Long userId,
             Pageable pageable) {
         Page<RecordInfoResponse> records = recordService.getUserRoundRecords(roundId, userId, pageable);
         return ResponseEntity.ok(records);
@@ -192,7 +192,7 @@ public class RecordController {
     @GetMapping("/round/{roundId}/user/total-amount")
     public ResponseEntity<Long> calculateUserRoundAmount(
             @PathVariable Long roundId,
-            @RequestHeader("User-Id") Long userId) {
+            @RequestHeader("user-id") Long userId) {
         long totalAmount = recordService.calculateUserRoundAmount(roundId, userId);
         return ResponseEntity.ok(totalAmount);
     }
@@ -221,7 +221,7 @@ public class RecordController {
      */
     @GetMapping("/user/latest")
     public ResponseEntity<List<RecordInfoResponse>> getLatestUserRecords(
-            @RequestHeader("User-Id") Long userId,
+            @RequestHeader("user-id") Long userId,
             @RequestParam(defaultValue = "10") int limit) {
         List<RecordInfoResponse> records = recordService.getLatestUserRecords(userId, limit);
         return ResponseEntity.ok(records);

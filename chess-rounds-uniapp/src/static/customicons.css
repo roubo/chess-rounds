@@ -18,3 +18,20 @@
 .zhuanfa:before {
   content: "\e610";
 }
+
+/* Toast 图标 */
+.icon-success:before {
+  content: "✓";
+}
+
+.icon-error:before {
+  content: "✕";
+}
+
+.icon-warning:before {
+  content: "⚠";
+}
+
+.icon-info:before {
+  content: "ⓘ";
+}

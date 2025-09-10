@@ -104,6 +104,18 @@ public class CreateRecordRequest implements Serializable {
         this.remarks = remarks;
     }
     
+    @Override
+    public String toString() {
+        return "CreateRecordRequest{" +
+                "roundId=" + roundId +
+                ", recordType='" + recordType + '\'' +
+                ", description='" + description + '\'' +
+                ", totalAmount=" + totalAmount +
+                ", participantRecords=" + participantRecords +
+                ", remarks='" + remarks + '\'' +
+                '}';
+    }
+    
     /**
      * 参与者记录请求内部类
      */
@@ -169,6 +181,16 @@ public class CreateRecordRequest implements Serializable {
         
         public void setRemarks(String remarks) {
             this.remarks = remarks;
+        }
+        
+        @Override
+        public String toString() {
+            return "ParticipantRecordRequest{" +
+                    "userId=" + userId +
+                    ", amountChange=" + amountChange +
+                    ", isWinner=" + isWinner +
+                    ", remarks='" + remarks + '\'' +
+                    '}';
         }
     }
 }

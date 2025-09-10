@@ -34,7 +34,7 @@
           <view class="amounts-list">
             <!-- 台板累计 -->
             <view v-if="hasTableBoardParticipant" class="amount-item-new table-board">
-              <image class="participant-avatar" src="/static/images/table-board.png" mode="aspectFill" />
+              <image class="participant-avatar" src="/static/images/default-avatar.png" mode="aspectFill" />
               <view class="participant-info">
                 <text class="participant-name">台板</text>
                 <text class="participant-amount" :class="{ 'positive': tableBoardAmount > 0, 'negative': tableBoardAmount < 0 }">
@@ -66,8 +66,10 @@
       <view class="records-section">
           <view class="section-header">
             <text class="section-title">每局记录</text>
-            <view v-if="canAddRecord" class="add-button" @click="showAddRecordModal">
-              <text class="add-icon">+</text>
+            <view class="header-actions">
+              <view v-if="canAddRecord" class="add-button" @click="showAddRecordModal">
+                <text class="add-icon">+</text>
+              </view>
             </view>
           </view>
           
@@ -89,7 +91,7 @@
               <view class="record-amounts-horizontal">
                 <!-- 台板记录 -->
                 <view v-if="hasTableBoardParticipant" class="record-amount-horizontal table-board">
-                  <image class="amount-avatar" src="/static/images/table-board.png" mode="aspectFill" />
+                  <image class="amount-avatar" src="/static/images/default-avatar.png" mode="aspectFill" />
                   <view class="amount-info">
                     <text class="amount-name">台板</text>
                     <text class="amount-value" :class="{ 'positive': getTableBoardAmount(record) > 0, 'negative': getTableBoardAmount(record) < 0 }">
@@ -114,6 +116,8 @@
           </view>
         </view>
     </scroll-view>
+
+
 
     <!-- 添加记录弹窗 -->
     <uni-popup ref="addRecordPopup" type="bottom" background-color="#fff">
@@ -259,6 +263,8 @@ export default {
       return ((this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress') && this.isParticipant
     },
     
+
+    
     // 检查是否有台板参与者
     hasTableBoardParticipant() {
       return Array.isArray(this.participants) && 
@@ -285,12 +291,29 @@ export default {
         let totalAmount = 0
         if (Array.isArray(this.gameRecords)) {
           totalAmount = this.gameRecords.reduce((total, record) => {
-            // 使用participant_id或id进行匹配
+            // 修复匹配逻辑：优先使用user_info.user_id，然后是participant_id或id
+            const userId = (participant.user_info && participant.user_info.user_id) || participant.user_id
             const participantId = participant.participant_id || participant.id
-            const amount = (record.participantAmounts && record.participantAmounts[participantId]) || 0
+            
+            // 尝试多种匹配方式
+            let amount = 0
+            if (record.participantAmounts) {
+              // 优先使用user_id匹配（与transformRecordsData保持一致）
+              amount = record.participantAmounts[userId] || 
+                      record.participantAmounts[participantId] || 
+                      record.participantAmounts[String(userId)] || 
+                      record.participantAmounts[String(participantId)] || 0
+            }
+            
+            console.log('累计计算 - 参与者:', participant.name || participant.user_info?.nickname, 
+                       'userId:', userId, 'participantId:', participantId, 
+                       'record amounts:', record.participantAmounts, 'amount:', amount)
+            
             return total + amount
           }, 0)
         }
+        
+        console.log('参与者累计结果:', participant.name || participant.user_info?.nickname, 'totalAmount:', totalAmount)
         
         return {
           ...participant,
@@ -367,11 +390,75 @@ export default {
     }
   },
   
+  onShow() {
+    // 页面显示时重新加载数据，确保数据是最新的
+    if (this.roundId) {
+      this.loadRoundDetail()
+    }
+  },
+  
   onUnload() {
     // 页面卸载时的清理工作
   },
   
   methods: {
+    // 转换API返回的记录数据格式
+    transformRecordsData(rawRecords) {
+      // 处理分页数据结构
+      let records = []
+      if (rawRecords && rawRecords.content && Array.isArray(rawRecords.content)) {
+        // 分页数据，提取content数组
+        records = rawRecords.content
+      } else if (Array.isArray(rawRecords)) {
+        // 直接是数组
+        records = rawRecords
+      } else {
+        return []
+      }
+      
+      console.log('转换记录数据，原始records:', records)
+      
+      return records.map(record => {
+        const transformedRecord = {
+          id: record.record_id || record.id,
+          createdAt: record.created_at || record.createdAt,
+          description: record.description,
+          totalAmount: record.total_amount || record.totalAmount,
+          participantAmounts: {}
+        }
+        
+        console.log('处理记录:', record)
+        
+        // 检查是否已经有participantAmounts（直接格式）
+        if (record.participantAmounts) {
+          console.log('使用现有participantAmounts:', record.participantAmounts)
+          transformedRecord.participantAmounts = { ...record.participantAmounts }
+        }
+        // 否则从participant_details转换（真实API数据格式）
+        else if (record.participant_details && Array.isArray(record.participant_details)) {
+          console.log('从participant_details转换:', record.participant_details)
+          record.participant_details.forEach(detail => {
+            console.log('处理participant detail:', detail)
+            if (detail.user_info) {
+              // 使用user_id作为key
+              const userId = detail.user_info.user_id
+              transformedRecord.participantAmounts[userId] = detail.amount_change
+              console.log('添加participantAmount:', userId, detail.amount_change)
+              
+              // 如果是台板用户，也添加table-board key用于兼容
+              if (detail.user_info.nickname && detail.user_info.nickname.includes('台板')) {
+                transformedRecord.participantAmounts['table-board'] = detail.amount_change
+                console.log('添加台板participantAmount:', detail.amount_change)
+              }
+            }
+          })
+        }
+        
+        console.log('转换后的记录participantAmounts:', transformedRecord.participantAmounts)
+        return transformedRecord
+      })
+    },
+    
     // 获取台板金额
     getTableBoardAmount(record) {
       return record.participantAmounts && record.participantAmounts['table-board'] ? record.participantAmounts['table-board'] : 0
@@ -407,7 +494,11 @@ export default {
         }
         
         if (recordsRes) {
-          this.gameRecords = (recordsRes.code === 200 ? recordsRes.data : recordsRes) || []
+          console.log('recordsRes:', recordsRes)
+          // recordsRes直接就是数据数组，不需要检查code字段
+          const rawRecords = recordsRes || []
+          // 转换API数据格式为前端期望的格式
+          this.gameRecords = this.transformRecordsData(rawRecords)
           console.log('解析后的gameRecords:', this.gameRecords)
         }
         
@@ -435,8 +526,8 @@ export default {
           this.roundDetail.hasTableBoard = hasTableBoard
         }
         
-        // 设置当前用户ID（mock模式下使用默认值）
-        this.currentUserId = uni.getStorageSync('userId') || '1'
+        // 设置当前用户ID
+        this.currentUserId = uni.getStorageSync('userId')
         
         // 显示加载成功提示
         if (this.roundDetail && this.participants.length > 0) {
@@ -540,7 +631,10 @@ export default {
         const recordsRes = await roundsApi.getGameRecords(this.roundId)
         
         if (recordsRes) {
-          this.gameRecords = (recordsRes.code === 200 ? recordsRes.data : recordsRes) || []
+          // recordsRes直接就是数据数组，不需要检查code字段
+          const rawRecords = recordsRes || []
+          // 转换API数据格式为前端期望的格式
+          this.gameRecords = this.transformRecordsData(rawRecords)
           
           // 显示刷新成功提示
           uni.showToast({
@@ -585,6 +679,8 @@ export default {
     hideAddRecordModal() {
       this.$refs.addRecordPopup.close()
     },
+    
+
     
     // 获取参与者符号
     getParticipantSign(participantId) {
@@ -712,7 +808,7 @@ export default {
           return
         }
         
-        // 构建记录数据 - 适配mock数据格式
+        // 构建记录数据
         const participantAmounts = {}
         this.participantsWithAmounts.forEach((participant) => {
           const amount = this.newRecord.participantAmounts[participant.id]
@@ -720,33 +816,36 @@ export default {
         })
         
         // 构造participant_records数据
-        console.log('participantsWithAmounts:', this.participantsWithAmounts)
-        const participantRecords = this.participantsWithAmounts.map((participant) => {
+        const participantRecords = this.participantsWithAmounts.map(participant => {
           const amount = this.newRecord.participantAmounts[participant.id]
+          const amountChange = amount === '' ? 0 : Number(amount || 0)
           // 从原始participants数组中查找对应的user_id
           const originalParticipant = this.participants.find(p => 
             (p.participant_id || p.id) === participant.id
           )
-          const userId = originalParticipant ? originalParticipant.user_id : null
-          console.log('participant:', participant, 'originalParticipant:', originalParticipant, 'user_id:', userId)
+          console.log('originalParticipant:', originalParticipant)
+          const userId = originalParticipant ? (originalParticipant.user_info ? originalParticipant.user_info.user_id : originalParticipant.user_id) : null
+          console.log(userId)
           return {
             user_id: userId,
-            amount_change: amount === '' ? 0 : Number(amount || 0)
+            amount_change: amountChange,
+            is_winner: amountChange > 0, // 金额为正数表示赢家
+            remarks: '' // 参与者备注，可根据需要添加
           }
         })
-        console.log('participantRecords:', participantRecords)
+        
+        // 计算总金额（所有参与者金额变化的绝对值之和）
+        const totalAmount = participantRecords.reduce((sum, record) => {
+          return sum + Math.abs(record.amount_change)
+        }, 0)
         
         const recordData = {
           round_id: this.roundId,
-          record_type: 'WIN', // 默认设置为胜利类型，可根据实际需求调整
-          description: '游戏记录',
-          total_amount: 0, // 可根据实际需求计算总金额
+          record_type: 'WIN', // 使用WIN类型表示游戏记录
+          description: `第${Array.isArray(this.gameRecords) ? this.gameRecords.length + 1 : 1}局游戏记录`,
+          total_amount: totalAmount,
           participant_records: participantRecords,
-          remarks: '',
-          // 保留原有字段用于兼容
-          roundId: this.roundId,
-          tableBoardAmount: this.newRecord.tableBoardAmount,
-          participantAmounts
+          remarks: '游戏记录'
         }
         
         const response = await roundsApi.addGameRecord(recordData)
@@ -783,18 +882,66 @@ export default {
     
     // 获取参与者头像
     getParticipantAvatar(participantId) {
-      const participant = this.participants.find(p => p.id === participantId || p.participant_id === participantId)
+      console.log('=== 获取头像调试信息 ===')
+      console.log('participantId:', participantId, 'type:', typeof participantId)
+      console.log('当前participants数组长度:', this.participants?.length)
+      console.log('participants详细信息:', JSON.stringify(this.participants, null, 2))
+      
+      if (!this.participants || this.participants.length === 0) {
+        console.log('participants数组为空或未定义')
+        return '/static/images/default-avatar.png'
+      }
+      
+      // 查找参与者
+      const participant = this.participants.find(p => {
+        console.log('检查参与者:', JSON.stringify(p, null, 2))
+        console.log('匹配检查:')
+        console.log('  p.id === participantId:', p.id, '===', participantId, '结果:', p.id === participantId)
+        console.log('  p.participant_id === participantId:', p.participant_id, '===', participantId, '结果:', p.participant_id === participantId)
+        console.log('  p.user_id === participantId:', p.user_id, '===', participantId, '结果:', p.user_id === participantId)
+        console.log('  p.user_info?.user_id === participantId:', p.user_info?.user_id, '===', participantId, '结果:', p.user_info?.user_id === participantId)
+        
+        // 支持多种ID匹配方式，重点匹配user_info.user_id
+        const match = (p.user_info && p.user_info.user_id === participantId) ||
+               (p.user_info && String(p.user_info.user_id) === String(participantId)) ||
+               p.id === participantId || 
+               p.participant_id === participantId || 
+               p.user_id === participantId ||
+               // 添加字符串和数字的类型转换匹配
+               String(p.id) === String(participantId) ||
+               String(p.participant_id) === String(participantId) ||
+               String(p.user_id) === String(participantId)
+        
+        console.log('  最终匹配结果:', match)
+        return match
+      })
+      
+      console.log('找到的参与者:', participant ? JSON.stringify(participant, null, 2) : 'undefined')
+      
       if (participant) {
         // 适配新的API格式：用户信息在user_info中
         const avatarUrl = (participant.user_info && participant.user_info.avatar_url) || participant.avatar
+        console.log('原始头像URL:', avatarUrl)
+        
         // 处理相对路径的头像URL
         if (avatarUrl && avatarUrl.startsWith('/static/')) {
           const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
           console.log('头像URL拼接:', baseURL, avatarUrl)
           return baseURL + avatarUrl
         }
+        
+        // 处理完整HTTP URL
+        if (avatarUrl && avatarUrl.startsWith('http')) {
+          console.log('使用完整HTTP头像URL:', avatarUrl)
+          return avatarUrl
+        }
+        
+        console.log('使用默认头像或原始URL:', avatarUrl)
         return avatarUrl || '/static/images/default-avatar.png'
       }
+      
+      console.log('未找到参与者，使用默认头像')
+      console.log('=== 头像调试信息结束 ===')
       return '/static/images/default-avatar.png'
     },
     
@@ -813,6 +960,11 @@ export default {
     // 获取参与者头像URL
     getParticipantAvatarUrl(participant) {
       if (!participant) {
+        return '/static/images/default-avatar.png'
+      }
+      
+      // 台板始终使用默认头像
+      if (participant.id === 'table-board' || participant.role === 'table_board' || participant.role === 'table') {
         return '/static/images/default-avatar.png'
       }
       
@@ -1091,6 +1243,37 @@ export default {
       font-size: 32rpx;
       font-weight: bold;
       color: $uni-text-color;
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+    }
+    
+    .close-button {
+      display: flex;
+      align-items: center;
+      gap: 6rpx;
+      padding: 8rpx 12rpx;
+      background-color: #ff4757;
+      border-radius: 20rpx;
+      
+      .close-icon {
+        font-size: 24rpx;
+        color: white;
+        font-weight: bold;
+      }
+      
+      .close-text {
+        font-size: 24rpx;
+        color: white;
+        font-weight: 500;
+      }
+      
+      &:active {
+        opacity: 0.8;
+      }
     }
     
     .add-button {

@@ -51,6 +51,14 @@
 			}
 		},
 		{
+			"path": "pages/test-toast/test-toast",
+			"style": {
+				"navigationBarTitleText": "Toast测试",
+				"navigationBarBackgroundColor": "#5D688A",
+				"navigationBarTextStyle": "white"
+			}
+		},
+		{
 			"path": "pages/login/login",
 			"style": {
 				"navigationBarTitleText": "登录",
@@ -65,6 +73,14 @@
 				"navigationBarBackgroundColor": "#5D688A",
 				"navigationBarTextStyle": "white"
 			}
+		},
+		{
+			"path": "pages/toast-demo/toast-demo",
+			"style": {
+				"navigationBarTitleText": "Toast演示",
+				"navigationBarBackgroundColor": "#5D688A",
+				"navigationBarTextStyle": "white"
+			}
 		}
 	],
 	"globalStyle": {
@@ -74,9 +90,9 @@
 		"backgroundColor": "#FFF2EF"
 	},
 	"tabBar": {
-		"color": "#909399",
+		"color": "#8B9BB5",
 		"selectedColor": "#5D688A",
-		"backgroundColor": "#FFF2EF",
+		"backgroundColor": "#F8F9FC",
 		"borderStyle": "white",
 		"list": [
 			{
