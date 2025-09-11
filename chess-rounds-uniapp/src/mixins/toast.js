@@ -8,7 +8,7 @@ import toast, { showToast, showSuccess, showError, showWarning, showInfo, showTe
 export default {
   methods: {
     // 自定义Toast方法
-    $toast: toast,
+    $toast: showToast,
     $showToast: showToast,
     $showSuccess: showSuccess,
     $showError: showError,

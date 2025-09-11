@@ -83,10 +83,7 @@
 					this.connecting = false
 					this.connected = true
 					uni.hideLoading()
-					uni.showToast({
-						icon: 'none',
-						title: '连接成功'
-					})
+					// uni.showToast() - 已屏蔽
 					console.log('onOpen', res);
 				})
 				this.socketTask.onError((err) => {

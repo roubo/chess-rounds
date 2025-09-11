@@ -21,12 +21,7 @@
 		},
 		methods: {
 			onClick() {
-				uni.showToast({
-					title: "click van-button",
-					mask: false,
-					icon: "none",
-					duration: 1500
-				});
+				// uni.showToast() - 已屏蔽;
 
 			}
 		}

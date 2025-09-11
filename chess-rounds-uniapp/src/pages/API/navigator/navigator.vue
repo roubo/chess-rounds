@@ -79,15 +79,11 @@
 				uni.preloadPage({
 					url: preloadPageUrl,
 					success(){
-						uni.showToast({
-							title:'页面预载成功'
-						})
+						// uni.showToast() - 已屏蔽
 					},
 					fail(e){
 						console.error(e);
-						uni.showToast({
-							title:'页面预载失败'
-						})
+						// uni.showToast() - 已屏蔽
 					}
 				})
 			},

@@ -19,10 +19,7 @@
 			}
 		},
 		onNavigationBarButtonTap(e) {
-			uni.showToast({
-				title: e.index === 0 ? "你点了分享按钮" : "你点了收藏按钮",
-				icon: "none"
-			})
+			// uni.showToast() - 已屏蔽
 		}
 	}
 </script>

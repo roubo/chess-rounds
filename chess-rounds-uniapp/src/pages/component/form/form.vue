@@ -67,9 +67,9 @@
                 var formData = e.detail.value;
                 var checkRes = graceChecker.check(formData, rule);
                 if(checkRes){
-                    uni.showToast({title:"验证通过!", icon:"none"});
+                    // uni.showToast() - 已屏蔽;
                 }else{
-                    uni.showToast({ title: graceChecker.error, icon: "none" });
+                    // uni.showToast() - 已屏蔽;
                 }
 			},
 			formReset: function(e) {

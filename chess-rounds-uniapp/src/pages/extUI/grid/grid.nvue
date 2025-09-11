@@ -184,7 +184,7 @@
 				} = e.detail
 				this.list[index].badge && this.list[index].badge++
 
-				uni.showToast({
+				// uni.showToast({
 					title: `点击第${index+1}个宫格`,
 					icon: 'none'
 				})
@@ -197,7 +197,7 @@
 						color: this.dynamicList.length % 2 === 0 ? '#f5f5f5' : "#fff"
 					})
 				} else {
-					uni.showToast({
+					// uni.showToast({
 						title: '最多添加9个',
 						icon: 'none'
 					});

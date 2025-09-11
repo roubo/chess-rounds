@@ -57,11 +57,7 @@
                     }
 
                     setTimeout(() => {
-                        uni.showToast({
-                            title: "激励视频" + (res.isEnded ? "成功" : "未") + "播放完毕",
-                            duration: 10000,
-                            position: 'bottom'
-                        })
+                        // uni.showToast() - 已屏蔽
                     }, 500)
                 });
                 rewardedVideoAd.onError((err) => {
@@ -80,11 +76,7 @@
                         .then(() => rewardedVideoAd.show())
                         .catch(err => {
                             console.log('激励视频 广告显示失败', err)
-                            uni.showToast({
-                                title: err.errMsg || err.message,
-                                duration: 5000,
-                                position: 'bottom'
-                            })
+                            // uni.showToast() - 已屏蔽
                         })
                 })
             },

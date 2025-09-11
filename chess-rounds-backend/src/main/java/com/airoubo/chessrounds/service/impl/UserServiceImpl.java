@@ -6,7 +6,10 @@ import com.airoubo.chessrounds.dto.user.UserLoginRequest;
 import com.airoubo.chessrounds.dto.user.UserLoginResponse;
 import com.airoubo.chessrounds.dto.wechat.WechatLoginResponse;
 import com.airoubo.chessrounds.entity.User;
+import com.airoubo.chessrounds.entity.ParticipantRecord;
+import com.airoubo.chessrounds.enums.RoundStatus;
 import com.airoubo.chessrounds.repository.UserRepository;
+import com.airoubo.chessrounds.repository.ParticipantRecordRepository;
 import com.airoubo.chessrounds.service.UserService;
 import com.airoubo.chessrounds.service.WechatApiService;
 import com.airoubo.chessrounds.util.JwtUtil;
@@ -15,9 +18,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +49,9 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private JwtUtil jwtUtil;
+    
+    @Autowired
+    private ParticipantRecordRepository participantRecordRepository;
     
     @Override
     public UserLoginResponse login(UserLoginRequest loginRequest) {
@@ -252,12 +261,63 @@ public class UserServiceImpl implements UserService {
     
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "userStatistics", key = "#userId", unless = "#result.totalRounds == 0")
     public UserStatistics getUserStatistics(Long userId) {
-        // TODO: 实现用户统计逻辑
-        // 1. 查询用户参与的回合数
-        // 2. 计算胜率
-        // 3. 计算总金额
-        return new UserStatistics(0L, 0L, 0L, 0L);
+        try {
+            // 查询用户在已结束回合中的参与记录
+            List<ParticipantRecord> participantRecords = participantRecordRepository.findByUserIdAndFinishedRounds(userId, RoundStatus.FINISHED);
+            
+            if (participantRecords.isEmpty()) {
+                return new UserStatistics(0L, 0L, 0L, 0L, 0L, 0L);
+            }
+            
+            // 计算统计数据
+            long totalRounds = participantRecords.size();
+            long winRounds = participantRecords.stream()
+                    .mapToLong(record -> Boolean.TRUE.equals(record.getIsWinner()) ? 1L : 0L)
+                    .sum();
+            
+            // 计算平场数（金额变化为0的记录）
+            long drawRounds = participantRecords.stream()
+                    .mapToLong(record -> record.getAmountChange().compareTo(BigDecimal.ZERO) == 0 ? 1L : 0L)
+                    .sum();
+            
+            // 计算负场数（总回合数 - 胜场数 - 平场数）
+            long loseRounds = totalRounds - winRounds - drawRounds;
+            
+            // 计算总金额变化（正数为盈利，负数为亏损），应用回合倍率
+            BigDecimal totalAmountChange = participantRecords.stream()
+                    .map(record -> {
+                        BigDecimal amountChange = record.getAmountChange();
+                        BigDecimal multiplier = record.getRound() != null && record.getRound().getMultiplier() != null 
+                                ? record.getRound().getMultiplier() 
+                                : BigDecimal.ONE;
+                        return amountChange.multiply(multiplier);
+                    })
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            // 计算胜利金额（只统计正数的金额变化），应用回合倍率
+            BigDecimal winAmountChange = participantRecords.stream()
+                    .map(record -> {
+                        BigDecimal amountChange = record.getAmountChange();
+                        BigDecimal multiplier = record.getRound() != null && record.getRound().getMultiplier() != null 
+                                ? record.getRound().getMultiplier() 
+                                : BigDecimal.ONE;
+                        return amountChange.multiply(multiplier);
+                    })
+                    .filter(amount -> amount.compareTo(BigDecimal.ZERO) > 0)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            // 转换为Long类型（以分为单位）
+            long totalAmount = totalAmountChange.multiply(new BigDecimal(100)).longValue();
+            long winAmount = winAmountChange.multiply(new BigDecimal(100)).longValue();
+            
+            return new UserStatistics(totalRounds, winRounds, loseRounds, drawRounds, totalAmount, winAmount);
+            
+        } catch (Exception e) {
+            logger.error("获取用户统计信息失败，userId: {}", userId, e);
+            return new UserStatistics(0L, 0L, 0L, 0L, 0L, 0L);
+        }
     }
     
     @Override

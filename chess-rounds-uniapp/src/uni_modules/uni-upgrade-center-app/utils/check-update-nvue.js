@@ -138,10 +138,7 @@ function updateUseModal(packageInfo) {
 				return;
 			}
 
-			uni.showToast({
-				title: '后台下载中……',
-				duration: 1000
-			});
+			// // uni.showToast() - 已屏蔽;
 
 			// wgt 和 安卓下载更新
 			downloadTask = uni.downloadFile({

@@ -58,7 +58,7 @@
 		},
 		methods: {
 			timeup() {
-				uni.showToast({
+				// uni.showToast({
 					title: '时间到'
 				})
 				this.timeupSecond = 29

@@ -40,11 +40,7 @@
 							name: 'data',
 							success: (res) => {
 								console.log('uploadImage success, res is:', res)
-								uni.showToast({
-									title: '上传成功',
-									icon: 'success',
-									duration: 1000
-								})
+								// uni.showToast() - 已屏蔽
 								this.imageSrc = imageSrc
 							},
 							fail: (err) => {

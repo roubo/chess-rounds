@@ -195,14 +195,11 @@
 		methods: {
 			contentClick(){
 				console.log('点击内容');
-				uni.showToast({
-					title:'点击内容',
-					icon:'none'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			bindClick(e) {
 				console.log(e);
-				uni.showToast({
+				// uni.showToast({
 					title: `点击了${e.position === 'left' ? '左侧' : '右侧'} ${e.content.text}按钮`,
 					icon: 'none'
 				});
@@ -267,18 +264,12 @@
 							],
 							content: '新增' + new Date().getTime()
 						});
-						uni.showToast({
-							title: `添加了一条数据`,
-							icon: 'none'
-						});
+						// uni.showToast() - 已屏蔽;
 					} else {
-						uni.showToast({
-							title: `最多添加十条数据`,
-							icon: 'none'
-						});
+						// uni.showToast() - 已屏蔽;
 					}
 				} else {
-					uni.showToast({
+					// uni.showToast({
 						title: `点击了${e.content.text}按钮`,
 						icon: 'none'
 					});

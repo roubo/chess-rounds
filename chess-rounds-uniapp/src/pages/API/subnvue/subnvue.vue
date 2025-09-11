@@ -41,18 +41,13 @@
 						})
 						break;
 					default:
-						uni.showToast({
-							title: data.title,
-						})
+						// uni.showToast() - 已屏蔽
 						break;
 				}
 			})
 			// 监听 drawer 消息
 			uni.$on('drawer-page', (data) => {
-				uni.showToast({
-					title: '点击了第' + data + '项',
-					icon:"none"
-				});
+				// uni.showToast() - 已屏蔽;
 			})
 		},
 		onUnload() {

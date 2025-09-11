@@ -14,6 +14,7 @@ import com.airoubo.chessrounds.repository.ParticipantRepository;
 import com.airoubo.chessrounds.service.RoundService;
 import com.airoubo.chessrounds.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -87,6 +88,7 @@ public class RoundServiceImpl implements RoundService {
     }
     
     @Override
+    @CacheEvict(value = "userStatistics", key = "#userId")
     public ParticipantInfoResponse joinRound(Long roundId, Long userId) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new RuntimeException("回合不存在"));
@@ -167,7 +169,7 @@ public class RoundServiceImpl implements RoundService {
     }
     
     @Override
-    public void startRound(Long roundId, Long userId, Boolean hasTable, Long tableUserId) {
+    public void startRound(Long roundId, Long userId, Boolean hasTable, Long tableUserId, Double baseAmount) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new RuntimeException("回合不存在"));
         
@@ -185,6 +187,11 @@ public class RoundServiceImpl implements RoundService {
         if (hasTable != null) {
             round.setHasTable(hasTable);
             round.setTableUserId(tableUserId);
+        }
+        
+        // 更新倍率值
+        if (baseAmount != null) {
+            round.setMultiplier(BigDecimal.valueOf(baseAmount));
         }
         
         // 如果有台板，创建专门的台板用户并添加为参与者
@@ -222,13 +229,14 @@ public class RoundServiceImpl implements RoundService {
     }
     
     @Override
+    @CacheEvict(value = "userStatistics", allEntries = true)
     public void endRound(Long roundId, Long userId) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new RuntimeException("回合不存在"));
         
-        // 检查权限
-        if (!isCreator(roundId, userId)) {
-            throw new RuntimeException("只有创建者可以结束回合");
+        // 检查权限 - 创建者或参与者都可以收盘
+        if (!isCreator(roundId, userId) && !isParticipant(roundId, userId)) {
+            throw new RuntimeException("只有创建者或参与者可以结束回合");
         }
         
         // 检查状态
@@ -313,15 +321,8 @@ public class RoundServiceImpl implements RoundService {
     @Override
     @Transactional(readOnly = true)
     public Page<RoundInfoResponse> getUserRounds(Long userId, Pageable pageable) {
-        // 查询用户参与的回合ID列表
-        List<Long> roundIds = participantRepository.findRoundIdsByUserId(userId);
-        
-        if (roundIds.isEmpty()) {
-            return Page.empty(pageable);
-        }
-        
-        // 根据回合ID列表查询回合信息
-        return roundRepository.findByIdIn(roundIds, pageable)
+        // 直接查询用户参与的回合，按创建时间倒序排列
+        return roundRepository.findRoundsByUserId(userId, pageable)
                 .map(round -> convertToRoundInfoResponseWithUserRole(round, userId));
     }
     

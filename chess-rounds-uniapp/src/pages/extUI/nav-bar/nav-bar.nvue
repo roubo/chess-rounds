@@ -94,32 +94,32 @@
 				})
 			},
 			showMenu() {
-				uni.showToast({
+				// uni.showToast({
 					title: '菜单'
 				})
 			},
 			clickLeft() {
-				uni.showToast({
+				// uni.showToast({
 					title: '左侧按钮'
 				})
 			},
 			search() {
-				uni.showToast({
+				// uni.showToast({
 					title: '搜索'
 				})
 			},
 			showCity() {
-				uni.showToast({
+				// uni.showToast({
 					title: '选择城市'
 				})
 			},
 			scan() {
-				uni.showToast({
+				// uni.showToast({
 					title: '扫码'
 				})
 			},
 			confirm() {
-				uni.showToast({
+				// uni.showToast({
 					title: '搜索'
 				})
 			}

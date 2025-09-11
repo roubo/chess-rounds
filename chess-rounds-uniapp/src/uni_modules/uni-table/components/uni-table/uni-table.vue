@@ -166,7 +166,6 @@ export default {
 				// if (item.keyValue) {
 
 				const select = row.findIndex(v => {
-					//
 					if (typeof v === 'number') {
 						return v === index - 1
 					} else {

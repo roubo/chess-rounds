@@ -174,10 +174,7 @@ export default {
 				content: '确定要加入这个回合吗？',
 				success: (res) => {
 					if (res.confirm) {
-						uni.showToast({
-							title: '加入成功',
-							icon: 'success'
-						})
+						// uni.showToast() - 已屏蔽
 						// 这里应该调用API加入回合
 					}
 				}
@@ -189,10 +186,7 @@ export default {
 				content: '确定要退出这个回合吗？',
 				success: (res) => {
 					if (res.confirm) {
-						uni.showToast({
-							title: '退出成功',
-							icon: 'success'
-						})
+						// uni.showToast() - 已屏蔽
 						// 这里应该调用API退出回合
 					}
 				}
@@ -204,20 +198,14 @@ export default {
 				content: '确定要开始这个回合吗？',
 				success: (res) => {
 					if (res.confirm) {
-						uni.showToast({
-							title: '回合已开始',
-							icon: 'success'
-						})
+						// uni.showToast() - 已屏蔽
 						// 这里应该调用API开始回合
 					}
 				}
 			})
 		},
 		spectateRound() {
-			uni.showToast({
-				title: '观战功能开发中',
-				icon: 'none'
-			})
+			// uni.showToast() - 已屏蔽
 		}
 	}
 }

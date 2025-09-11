@@ -244,11 +244,7 @@
 			async closeUpdate() {
 				if (this.downloading) {
 					if (this.is_mandatory) {
-						return uni.showToast({
-							title: '下载中，请稍后……',
-							icon: 'none',
-							duration: 500
-						})
+						return // // uni.showToast() - 已屏蔽
 					}
 					if (!this.needNotificationProgress) {
 						this.askAbortDownload()

@@ -5,9 +5,9 @@
 			<view class="create-time-left">
 				<text class="create-time-text">{{ formatCreateTime(round.createdAt) }}</text>
 			</view>
-			<view class="round-info">
+			<view class="round-info-horizontal">
+				<text class="multiplier-hint">倍率x{{ round.multiplier || round.baseAmount || 1 }}</text>
 				<text class="round-status" :class="statusClass">{{ getStatusText(round.status) }}</text>
-				<text class="round-time">共{{ round.recordCount || 0 }}局</text>
 			</view>
 		</view>
 		
@@ -74,7 +74,26 @@ export default {
 			return this.round.status === 'playing' && !this.round.isParticipant
 		},
 		statusClass() {
-			return `status-${this.round.status?.toLowerCase()}`
+			const status = this.round.status
+			if (status === 'waiting' || status === 'WAITING') {
+				return 'status-waiting'
+			} else if (status === 'playing' || status === 'PLAYING' || status === 'ACTIVE') {
+				return 'status-playing'
+			} else if (status === 'finished' || status === 'FINISHED') {
+				// 对于已结束的回合，根据胜负平状态返回相应的类名
+				const resultText = this.getUserResultText()
+				if (resultText === '胜') {
+					return 'result-win'
+				} else if (resultText === '负') {
+					return 'result-lose'
+				} else if (resultText === '平') {
+					return 'result-draw'
+				}
+				return 'status-finished'
+			} else if (status === 'cancelled' || status === 'CANCELLED') {
+				return 'status-cancelled'
+			}
+			return ''
 		},
 		displayParticipants() {
 				if (!this.round.participants) return []
@@ -110,13 +129,60 @@ export default {
 	methods: {
 		getStatusText(status) {
 			console.log('Status value:', status, 'Type:', typeof status)
-			const statusMap = {
-				waiting: '组局中',
-				playing: '进行中',
-				finished: '已结束',
-				cancelled: '已取消'
+			
+			// 如果是已结束的回合，显示胜负平状态
+			if (status === 'finished') {
+				return this.getUserResultText()
 			}
-			return statusMap[status] || `未知(${status})`
+			
+			const statusMap = {
+				waiting: '等待中',
+				WAITING: '等待中',
+				playing: '进行中',
+				PLAYING: '进行中',
+				ACTIVE: '进行中',
+				finished: '已结束',
+				FINISHED: '已结束',
+				cancelled: '已取消',
+				CANCELLED: '已取消'
+			}
+			return statusMap[status] || '未知状态'
+		},
+		
+		// 获取当前用户在已结束回合中的胜负平状态
+		getUserResultText() {
+			if (!this.round || this.round.status !== 'finished') {
+				return '已结束'
+			}
+			
+			// 获取当前用户信息
+			const currentUser = this.$auth?.getCurrentUser()
+			const currentUserId = currentUser?.userId || currentUser?.user_id
+			
+			if (!currentUserId) {
+				return '已结束'
+			}
+			
+			// 查找当前用户的参与者信息
+			const currentUserParticipant = this.round.participants?.find(p => {
+				const participantUserId = p.user_info?.user_id || p.user_id || p.id
+				return participantUserId == currentUserId
+			})
+			
+			if (!currentUserParticipant) {
+				return '已结束'
+			}
+			
+			// 根据total_amount判断胜负平
+			const totalAmount = currentUserParticipant.total_amount || currentUserParticipant.totalAmount || 0
+			
+			if (totalAmount > 0) {
+				return '胜'
+			} else if (totalAmount < 0) {
+				return '负'
+			} else {
+				return '平'
+			}
 		},
 		getStatusClass(status) {
 			return `status-${status?.toLowerCase()}`
@@ -148,39 +214,23 @@ export default {
 			if (!timestamp) return ''
 			
 			const date = new Date(timestamp)
-			const now = new Date()
-			const diff = now.getTime() - date.getTime()
-			
-			// 小于1分钟
-			if (diff < 60 * 1000) {
-				return '刚刚'
-			}
-			
-			// 小于1小时
-			if (diff < 60 * 60 * 1000) {
-				const minutes = Math.floor(diff / (60 * 1000))
-				return `${minutes}分钟前`
-			}
-			
-			// 小于24小时
-			if (diff < 24 * 60 * 60 * 1000) {
-				const hours = Math.floor(diff / (60 * 60 * 1000))
-				return `${hours}小时前`
-			}
-			
-			// 小于7天
-			if (diff < 7 * 24 * 60 * 60 * 1000) {
-				const days = Math.floor(diff / (24 * 60 * 60 * 1000))
-				return `${days}天前`
-			}
-			
-			// 超过7天显示具体日期
+			const year = date.getFullYear()
 			const month = (date.getMonth() + 1).toString().padStart(2, '0')
 			const day = date.getDate().toString().padStart(2, '0')
-			return `${month}-${day}`
+			const hours = date.getHours().toString().padStart(2, '0')
+			const minutes = date.getMinutes().toString().padStart(2, '0')
+			
+			// 显示具体的创建时间
+			return `${year}-${month}-${day} ${hours}:${minutes}`
 		},
 		goToDetail() {
 			console.log(this.round)
+			// 如果是历史模式，发出事件让父组件处理
+			if (this.isHistory) {
+				this.$emit('click', this.round)
+				return
+			}
+			
 			// 如果是组局中状态且当前用户是创建者，跳转到创建页面
 			if (this.round.status === 'waiting' && this.round.currentUserRole === 'creator') {
 				uni.navigateTo({
@@ -207,10 +257,7 @@ export default {
 			try {
 				await roundsApi.joinRound(this.round.id, this.passwordInput)
 				
-				uni.showToast({
-					title: '加入成功',
-					icon: 'success'
-				})
+				// // uni.showToast() - 已屏蔽
 				
 				// 跳转到回合详情页
 				setTimeout(() => {
@@ -302,6 +349,37 @@ export default {
 		font-size: 22rpx;
 		color: $uni-text-color-grey;
 	}
+
+	.multiplier-hint {
+		font-size: 22rpx;
+		color: $uni-color-primary;
+		font-weight: 500;
+		background-color: lighten($uni-color-primary, 45%);
+		padding: 4rpx 8rpx;
+		border-radius: 8rpx;
+	}
+}
+
+.round-info-horizontal {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+
+	.round-status {
+		font-size: 22rpx;
+		font-weight: 500;
+		padding: 4rpx 8rpx;
+		border-radius: 8rpx;
+	}
+
+	.multiplier-hint {
+		font-size: 22rpx;
+		color: $uni-color-primary;
+		font-weight: 500;
+		background-color: lighten($uni-color-primary, 45%);
+		padding: 4rpx 8rpx;
+		border-radius: 8rpx;
+	}
 }
 
 .create-time-left {
@@ -337,6 +415,25 @@ export default {
 .status-cancelled {
 	background-color: #f8d7da;
 	color: #721c24;
+}
+
+// 胜负平状态颜色
+.result-win {
+	background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
+	border: 1rpx solid #27AE60;
+	color: #27AE60;
+}
+
+.result-lose {
+	background: linear-gradient(135deg, #FDF2F2 0%, #FEF5F5 100%);
+	border: 1rpx solid #E74C3C;
+	color: #E74C3C;
+}
+
+.result-draw {
+	background: linear-gradient(135deg, #FEF9E7 0%, #FFFBF0 100%);
+	border: 1rpx solid #F39C12;
+	color: #F39C12;
 }
 
 .amounts-list {

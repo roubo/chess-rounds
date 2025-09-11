@@ -61,7 +61,6 @@
 				// 	height: '150px'
 				// },{
 				// 	delay:100,
-				// 	duration:200
 				// })
 				this.$refs.ani.step({
 					width: '100px',

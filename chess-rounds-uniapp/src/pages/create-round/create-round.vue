@@ -146,7 +146,8 @@ export default {
 		isClosing: false,
 		isRefreshing: false,
 		createdRoundId: null,
-		qrSize: 135,
+		qrSize: 120,
+		screenWidth: 375,
 		roundParticipants: [],
 		refreshTimer: null,
 		maxPlayers: 4,
@@ -186,15 +187,13 @@ export default {
 	},
 	async onLoad(options) {
 		// 页面加载时的初始化
+		this.calculateQRSize() // 计算二维码尺寸
 		this.updateMaxPlayers()
 		this.currentUser = AuthManager.getCurrentUser()
 		
 		// 检查用户登录状态
 		if (!this.currentUser) {
-			uni.showToast({
-				title: '请先登录',
-				icon: 'none'
-			})
+			// uni.showToast() - 已屏蔽
 			setTimeout(() => {
 				uni.navigateBack()
 			}, 1500)
@@ -289,7 +288,7 @@ export default {
 				const roundData = {
 					game_type: 'mahjong', // 麻将类型
 					max_participants: this.maxPlayers,
-					base_amount: this.formData.gameMultiplier || 1.0,
+					base_amount: parseFloat(this.formData.gameMultiplier) || 1.0,
 					has_table: this.formData.hasTableBoard || false,
 					// table_user_id 已移除，台板用户由后端自动创建
 					is_public: false, // 默认私有
@@ -298,7 +297,6 @@ export default {
 				}
 				
 				const response = await roundsApi.createRound(roundData)
-			console.log('创建回合响应:', response)
 			// 后端返回的字段名是 round_id
 			// 检查响应数据结构
 			if (response && response.data && response.data.round_id) {
@@ -314,7 +312,6 @@ export default {
 				// 创建者自动加入回合
 				try {
 					await roundsApi.joinRound(this.createdRoundId)
-					console.log('创建者自动加入回合成功')
 					// 立即刷新参与者列表
 					await this.loadParticipants()
 				} catch (joinError) {
@@ -334,10 +331,7 @@ export default {
 				})
 				
 				uni.hideLoading()
-				uni.showToast({
-					title: '回合创建成功',
-					icon: 'success'
-				})
+				// uni.showToast() - 已屏蔽
 				
 			} catch (error) {
 				console.error('自动创建回合失败:', error)
@@ -367,10 +361,7 @@ export default {
 			try {
 				const currentUser = AuthManager.getCurrentUser()
 				if (!currentUser) {
-					uni.showToast({
-						title: '请先登录',
-						icon: 'none'
-					})
+					// uni.showToast() - 已屏蔽
 					return
 				}
 				
@@ -378,7 +369,7 @@ export default {
 				const roundData = {
 					game_type: 'mahjong', // 麻将类型
 					max_participants: this.maxPlayers,
-					base_amount: this.formData.gameMultiplier || 1.0,
+					base_amount: parseFloat(this.formData.gameMultiplier) || 1.0,
 					has_table: this.formData.hasTableBoard || false,
 					// table_user_id 已移除，台板用户由后端自动创建
 					is_public: false, // 默认私有
@@ -387,7 +378,6 @@ export default {
 				}
 				
 				const response = await roundsApi.createRound(roundData)
-			console.log('创建回合响应:', response)
 			// 后端返回的字段名是 round_id
 			// 检查响应数据结构
 			if (response && response.data && response.data.round_id) {
@@ -403,7 +393,6 @@ export default {
 				// 创建者自动加入回合
 				try {
 					await roundsApi.joinRound(this.createdRoundId)
-					console.log('创建者自动加入回合成功')
 					// 立即刷新参与者列表
 					await this.loadParticipants()
 				} catch (joinError) {
@@ -417,17 +406,11 @@ export default {
 				// 开始定时刷新参与者列表
 				this.startRefreshTimer()
 				
-				uni.showToast({
-					title: '回合创建成功',
-					icon: 'success'
-				})
+				// uni.showToast() - 已屏蔽
 				
 			} catch (error) {
 				console.error('创建回合失败:', error)
-				uni.showToast({
-					title: error.message || '创建失败',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			} finally {
 				this.isCreating = false
 			}
@@ -439,32 +422,47 @@ export default {
 				return
 			}
 			
+			// 显示确认弹窗
+			uni.showModal({
+				title: '确认开始回合',
+				content: `当前倍率：${this.formData.gameMultiplier}倍\n\n注意：开始回合后将不能再增加参与者，请确认所有玩家都已加入。`,
+				confirmText: '开始回合',
+				cancelText: '取消',
+				success: async (res) => {
+					if (res.confirm) {
+						await this.doStartRound()
+					}
+				}
+			})
+		},
+		
+		// 执行开始回合
+		async doStartRound() {
 			try {
-				// 开始回合，传递台板状态参数
+				this.isStarting = true
+				
+				// 开始回合，传递台板状态参数和倍率值
 				await roundsApi.startRound(
 					this.createdRoundId,
 					this.formData.hasTableBoard,
-					null // 台板用户现在由后端自动创建
+					null, // 台板用户现在由后端自动创建
+					parseFloat(this.formData.gameMultiplier) || 1.0 // 传递当前倍率值
 				)
 				
-				uni.showToast({
-					title: '回合已开始',
-					icon: 'success'
-				})
+				// uni.showToast() - 已屏蔽
 				
-				// 跳转到回合详情页
+				// 跳转到回合详情页，使用redirectTo替换当前页面
 				setTimeout(() => {
-					uni.navigateTo({
+					uni.redirectTo({
 						url: `/pages/round-detail/round-detail?id=${this.createdRoundId}`
 					})
 				}, 1500)
 				
 			} catch (error) {
 				console.error('开始回合失败:', error)
-				uni.showToast({
-					title: '开始回合失败',
-					icon: 'error'
-				})
+				// uni.showToast() - 已屏蔽
+			} finally {
+				this.isStarting = false
 			}
 		},
 		
@@ -509,10 +507,7 @@ export default {
 				// 调用删除API
 				await roundsApi.deleteRound(this.createdRoundId)
 				
-				uni.showToast({
-					title: '回合已关闭',
-					icon: 'success'
-				})
+				// uni.showToast() - 已屏蔽
 				
 				// 返回上一页
 				setTimeout(() => {
@@ -521,10 +516,7 @@ export default {
 				
 			} catch (error) {
 				console.error('关闭回合失败:', error)
-				uni.showToast({
-					title: error.message || '关闭回合失败',
-					icon: 'error'
-				})
+				// uni.showToast() - 已屏蔽
 			} finally {
 				this.isClosing = false
 			}
@@ -533,10 +525,7 @@ export default {
 		// 生成小程序码
 		async generateQRCode() {
 			try {
-				console.log('开始生成小程序码，回合ID:', this.createdRoundId)
-				
 				// 直接使用uni.downloadFile下载图片，避免UTF8转换问题
-				console.log('使用downloadFile下载小程序码图片')
 				
 				const downloadResult = await new Promise((resolve, reject) => {
 					uni.downloadFile({
@@ -545,39 +534,47 @@ export default {
 							'Authorization': `Bearer ${uni.getStorageSync('token')}`
 						},
 						success: (res) => {
-							console.log('下载成功:', res)
 							resolve(res)
 						},
 						fail: (err) => {
-							console.log('下载失败:', err)
 							reject(err)
 						}
 					})
 				})
 				
 				if (downloadResult.statusCode === 200 && downloadResult.tempFilePath) {
-						console.log('下载的临时文件路径:', downloadResult.tempFilePath)
 						
 						// 在canvas上绘制小程序码
 						const canvas = uni.createCanvasContext('qrCanvas', this)
 						
 						// 使用uni.getImageInfo获取图片信息后绘制
-						uni.getImageInfo({
-							src: downloadResult.tempFilePath,
-							success: (imageInfo) => {
-								console.log('图片信息获取成功:', imageInfo)
-								// 直接使用drawImage绘制
-								canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
-								canvas.draw()
-								console.log('小程序码绘制完成')
-							},
-							fail: (err) => {
-								console.error('获取图片信息失败:', err)
-								// 尝试直接绘制
-								canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
-								canvas.draw()
-							}
+				uni.getImageInfo({
+					src: downloadResult.tempFilePath,
+					success: (imageInfo) => {
+						// 直接使用drawImage绘制
+						canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
+						canvas.draw(true, () => {
+							// 绘制完成后强制触发页面重新渲染，确保容器调整大小
+							this.$forceUpdate()
+							// 延迟一帧再次强制更新，确保布局完全重新计算
+							this.$nextTick(() => {
+								this.$forceUpdate()
+							})
 						})
+					},
+					fail: (err) => {
+						console.error('获取图片信息失败:', err)
+						// 尝试直接绘制
+						canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
+						canvas.draw(true, () => {
+							// 绘制完成后强制触发页面重新渲染
+							this.$forceUpdate()
+							this.$nextTick(() => {
+								this.$forceUpdate()
+							})
+						})
+					}
+				})
 				} else {
 					console.error('下载文件失败:', downloadResult)
 					throw new Error('下载小程序码失败')
@@ -585,10 +582,7 @@ export default {
 				
 			} catch (error) {
 				console.error('生成小程序码失败:', error)
-				uni.showToast({
-					title: '生成小程序码失败',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			}
 		},
 		
@@ -598,8 +592,6 @@ export default {
 		async loadParticipants() {
 			try {
 				const response = await roundsApi.getRoundParticipants(this.createdRoundId)
-				console.log('API响应完整数据:', response)
-				console.log('参与者数据:', response.data || response)
 				// 处理不同的响应格式
 				if (response && response.data) {
 					this.roundParticipants = response.data
@@ -608,7 +600,6 @@ export default {
 				} else {
 					this.roundParticipants = []
 				}
-				console.log('设置后的roundParticipants:', this.roundParticipants)
 			} catch (error) {
 				console.error('加载参与者失败:', error)
 				this.roundParticipants = []
@@ -628,7 +619,7 @@ export default {
 				
 				// 设置表单数据
 				this.formData.hasTableBoard = roundData.has_table || false
-				this.formData.gameMultiplier = roundData.base_amount || 1
+				this.formData.gameMultiplier = roundData.baseAmount || roundData.base_amount || 1
 				this.updateMaxPlayers()
 				
 				// 加载参与者列表
@@ -658,6 +649,26 @@ export default {
 						uni.navigateBack()
 					}
 				})
+			}
+		},
+		
+		// 计算二维码尺寸
+		calculateQRSize() {
+			try {
+				const systemInfo = uni.getSystemInfoSync()
+				this.screenWidth = systemInfo.screenWidth
+				
+				// 计算合适的二维码尺寸，考虑容器padding和边距
+				// 屏幕宽度 - 左右边距(36rpx) - 容器padding(30rpx) - 二维码容器padding(30rpx)
+				const availableWidth = this.screenWidth - 60 // 预留60px的边距
+				const maxQRSize = Math.min(availableWidth * 0.6, 150) // 最大150px，占可用宽度的60%
+				this.qrSize = Math.max(maxQRSize, 100) // 最小100px
+				
+				console.log('屏幕宽度:', this.screenWidth, '二维码尺寸:', this.qrSize)
+			} catch (error) {
+				console.error('获取系统信息失败:', error)
+				// 使用默认尺寸
+				this.qrSize = 120
 			}
 		},
 		
@@ -975,10 +986,33 @@ export default {
 	border-radius: 8rpx;
 	border: 2rpx solid #f0f0f0;
 	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+	max-width: 100%;
+	/* 使用固定宽度而不是fit-content，避免容器大小变化 */
+	width: 230rpx;
+	height: 230rpx;
+	margin: 0 auto;
+	/* 确保内容居中显示 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.qr-code-wrapper {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
 }
 
 .qr-canvas {
 	border-radius: 8rpx;
+	width: 200rpx;
+	height: 200rpx;
+	display: block;
+	/* 确保canvas尺寸固定，避免布局变化 */
+	flex-shrink: 0;
 }
 
 .qr-placeholder {
@@ -986,12 +1020,13 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 120rpx;
-	height: 120rpx;
+	width: 200rpx;
+	height: 200rpx;
 	border: 2rpx dashed #e0e0e0;
 	border-radius: 6rpx;
 	background-color: #f9f9f9;
-	margin: 0 auto;
+	/* 确保占位符尺寸与canvas一致 */
+	flex-shrink: 0;
 }
 
 .placeholder-icon {

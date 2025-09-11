@@ -532,7 +532,7 @@
 				uni.setClipboardData({
 				    data: !this.checked ? item.name:item.unicode,
 				    success:  ()=> {
-				        uni.showToast({
+				        // uni.showToast({
 				        	icon:'none',
 									title:`${!this.checked ?'图标名称':'unicode'}复制成功`
 				        })

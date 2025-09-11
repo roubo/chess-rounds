@@ -86,11 +86,7 @@ export default {
     
     showSystemToast() {
       // 使用系统原生Toast作为对比
-      uni.showToast({
-        title: '系统原生Toast',
-        icon: 'success',
-        duration: 2000
-      })
+      // uni.showToast() - 已屏蔽
     },
     
     showShortToast() {

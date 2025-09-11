@@ -60,21 +60,13 @@
 						success: () => {
 							// 成功处理
 							// #ifdef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO
-							uni.showToast({
-								title: '设置剪贴板成功',
-								icon: "success",
-								mask: !1
-							})
+							// uni.showToast() - 已屏蔽
 							// #endif
 						},
 						fail: () => {
 							// 失败处理
 							// #ifdef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO
-							uni.showToast({
-								title: '储存数据失败!',
-								icon: "none",
-								mask: !1
-							})
+							// uni.showToast() - 已屏蔽
 							// #endif
 						}
 					});

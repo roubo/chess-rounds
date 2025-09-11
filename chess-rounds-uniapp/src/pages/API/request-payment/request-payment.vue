@@ -142,9 +142,7 @@
 				uni.requestPayment({
 					...orderInfo,
 					success: (res) => {
-						uni.showToast({
-							title: "感谢您的赞助!"
-						})
+						// uni.showToast() - 已屏蔽
 					},
 					fail: (res) => {
 						uni.showModal({
@@ -176,9 +174,7 @@
 					orderInfo: orderInfo,
 					success: (e) => {
 						console.log("success", e);
-						uni.showToast({
-							title: "感谢您的赞助!"
-						})
+						// uni.showToast() - 已屏蔽
 					},
 					fail: (e) => {
 						console.log("fail", e);

@@ -123,12 +123,12 @@
 		methods: {
 			onClick(e) {
 				console.log('执行click事件', e.data)
-				uni.showToast({
+				// uni.showToast({
 					title: '点击反馈'
 				});
 			},
 			switchChange(e) {
-				uni.showToast({
+				// uni.showToast({
 					title: 'change:' + e.value,
 					icon: 'none'
 				});

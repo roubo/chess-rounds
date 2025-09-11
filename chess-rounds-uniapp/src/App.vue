@@ -144,11 +144,7 @@
 			if (!isLoggedIn) {
 				// 未登录，跳转到登录页并传递重定向参数
 				console.log('用户未登录，跳转到登录页')
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none',
-					duration: 1500
-				})
+				// uni.showToast() - 已屏蔽
 				
 				setTimeout(() => {
 					uni.navigateTo({
@@ -161,11 +157,7 @@
 			// 检查用户信息是否完善
 			if (!userInfo.nickname || !userInfo.avatar) {
 				console.log('用户信息不完善，跳转到完善信息页')
-				uni.showToast({
-					title: '请先完善个人信息',
-					icon: 'none',
-					duration: 1500
-				})
+				// uni.showToast() - 已屏蔽
 				
 				setTimeout(() => {
 					uni.navigateTo({

@@ -45,10 +45,7 @@ export default {
 				checkAuthMode: 'fingerPrint',
 				success(res) {
                     if(res.isEnrolled) {
-                        uni.showToast({
-                            icon: 'none',
-                            title: '已录入指纹'
-                        })
+                        // uni.showToast() - 已屏蔽
                     }else {
                         uni.showModal({
                             content: '未录入指纹',
@@ -71,10 +68,7 @@ export default {
 				checkAuthMode: 'facial',
 				success(res) {
                     if(res.isEnrolled) {
-                        uni.showToast({
-                            icon: 'none',
-                            title: '已录入FaceID'
-                        })
+                        // uni.showToast() - 已屏蔽
                     }else {
                         uni.showModal({
                             content: '未录入FaceID',
@@ -98,10 +92,7 @@ export default {
 				challenge: '123456',
 				authContent: '请用指纹解锁',
 				success(res) {
-                    uni.showToast({
-                        icon: 'none',
-                        title: '指纹验证成功'
-                    })
+                    // uni.showToast() - 已屏蔽
 					console.log(res);
 				},
 				fail(err) {
@@ -119,10 +110,7 @@ export default {
 				challenge: '123456',
 				authContent: '请用FaceID解锁',
 				success(res) {
-                    uni.showToast({
-                        icon: 'none',
-                        title: 'FaceID验证成功'
-                    })
+                    // uni.showToast() - 已屏蔽
 					console.log(res);
 				},
 				fail(err) {

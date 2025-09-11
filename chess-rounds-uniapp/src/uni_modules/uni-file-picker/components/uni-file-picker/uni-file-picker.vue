@@ -328,7 +328,7 @@
 				if (this.disabled) return
 				if (this.files.length >= Number(this.limitLength) && this.showType !== 'grid' && this.returnType ===
 					'array') {
-					uni.showToast({
+					// // uni.showToast({
 						title: `您最多选择 ${this.limitLength} 个文件`,
 						icon: 'none'
 					})

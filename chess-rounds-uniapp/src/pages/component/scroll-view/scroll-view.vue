@@ -60,10 +60,7 @@
 				this.$nextTick(function() {
 					this.scrollTop = 0
 				});
-				uni.showToast({
-					icon:"none",
-					title:"纵向滚动 scrollTop 值已被修改为 0"
-				})
+				// uni.showToast() - 已屏蔽
 			}
 		}
 	}

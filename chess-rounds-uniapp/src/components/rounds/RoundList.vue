@@ -102,20 +102,24 @@ export default {
 		}
 	},
 	computed: {
-		// 我的回合（参与者或创建者，且participants不为空）
+		// 我的回合（参与者或创建者，且participants不为空，且未结束）
 		myRounds() {
 			return this.rounds.filter(round => {
 				// 过滤掉participants为空的项目
 				const hasParticipants = round.participants && round.participants.length > 0
-				return hasParticipants && (round.isParticipant || round.isCreator)
+				// 过滤掉已结束的回合
+				const isActive = round.status !== 'finished'
+				return hasParticipants && isActive && (round.isParticipant || round.isCreator)
 			})
 		},
-		// 旁观回合（仅旁观者，且participants不为空）
+		// 旁观回合（仅旁观者，且participants不为空，且未结束）
 		spectateRounds() {
 			return this.rounds.filter(round => {
 				// 过滤掉participants为空的项目
 				const hasParticipants = round.participants && round.participants.length > 0
-				return hasParticipants && round.isSpectator && !round.isParticipant && !round.isCreator
+				// 过滤掉已结束的回合
+				const isActive = round.status !== 'finished'
+				return hasParticipants && isActive && round.isSpectator && !round.isParticipant && !round.isCreator
 			})
 		}
 	},
@@ -161,7 +165,7 @@ export default {
 							tableUser: round.table_user,
 							participants: round.participants || [],
 							canJoin: round.can_join,
-							recordCount: 0, // 暂时设为0，后续可从其他接口获取
+							recordCount: 0, // 将在后续异步获取
 							// 用户角色标识
 							currentUserRole: round.current_user_role,
 							isCreator: round.current_user_role === 'creator',
@@ -173,11 +177,10 @@ export default {
 						}
 					})
 					
-					uni.showToast({
-						title: `加载了${this.rounds.length}个回合`,
-						icon: 'success',
-						duration: 1500
-					})
+					// 异步获取每个回合的记录数量
+					this.loadRecordCounts()
+					
+					// uni.showToast() - 已屏蔽
 				} else {
 					this.rounds = []
 				}
@@ -201,6 +204,25 @@ export default {
 		handleSpectateRound(roundId) {
 			this.$emit('spectate-round', roundId)
 		},
+		// 异步加载每个回合的记录数量
+		async loadRecordCounts() {
+			for (let i = 0; i < this.rounds.length; i++) {
+				const round = this.rounds[i]
+				try {
+					const records = await roundsApi.getGameRecords(round.id)
+					if (records && records.content) {
+						// 使用Vue.set确保响应式更新
+						this.$set(this.rounds[i], 'recordCount', records.content.length)
+					} else if (records && Array.isArray(records)) {
+						this.$set(this.rounds[i], 'recordCount', records.length)
+					}
+				} catch (error) {
+					// 获取记录数量失败时保持默认值0
+					console.warn(`获取回合 ${round.id} 记录数量失败:`, error)
+				}
+			}
+		},
+		
 		// 刷新数据
 		refresh() {
 			this.rounds = []

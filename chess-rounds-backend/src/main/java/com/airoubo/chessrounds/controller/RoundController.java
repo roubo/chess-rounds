@@ -3,6 +3,7 @@ package com.airoubo.chessrounds.controller;
 import com.airoubo.chessrounds.dto.round.CreateRoundRequest;
 import com.airoubo.chessrounds.dto.round.ParticipantInfoResponse;
 import com.airoubo.chessrounds.dto.round.RoundInfoResponse;
+import com.airoubo.chessrounds.dto.request.StartRoundRequest;
 import com.airoubo.chessrounds.service.RoundService;
 import com.airoubo.chessrounds.service.WechatApiService;
 
@@ -112,18 +113,17 @@ public class RoundController {
      * 开始回合
      * 
      * @param roundId 回合ID
-     * @param requestBody 请求体，包含台板信息
+     * @param startRequest 开始回合请求，包含台板信息和倍率
      * @param userId 用户ID
      * @return 操作结果
      */
     @PostMapping("/{roundId}/start")
     public ResponseEntity<Void> startRound(
             @PathVariable Long roundId,
-            @RequestBody Map<String, Object> requestBody,
+            @RequestBody StartRoundRequest startRequest,
             @RequestHeader("user-id") Long userId) {
-        Boolean hasTable = (Boolean) requestBody.get("hasTable");
         // tableUserId不再需要，台板用户由后端自动创建
-        roundService.startRound(roundId, userId, hasTable, null);
+        roundService.startRound(roundId, userId, startRequest.getHasTable(), null, startRequest.getBaseAmount());
         return ResponseEntity.ok().build();
     }
     

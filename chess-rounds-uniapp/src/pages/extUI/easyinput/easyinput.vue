@@ -85,7 +85,7 @@
 				console.log('输入内容：', e);
 			},
 			iconClick(type) {
-				uni.showToast({
+				// uni.showToast({
 					title: `点击了${type==='prefix'?'左侧':'右侧'}的图标`,
 					icon: 'none'
 				})

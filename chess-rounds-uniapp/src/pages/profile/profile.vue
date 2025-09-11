@@ -55,16 +55,17 @@
 					
 					<!-- 历史记录页面 -->
 					<view class="history-content" v-if="activeTab === 'history'">
-						<view class="history-list" v-if="isLoggedIn && historyList.length > 0">
-							<view class="history-item" v-for="item in historyList" :key="item.id">
-								<view class="history-info">
-									<text class="history-title">{{ item.mahjongType }}</text>
-									<text class="history-time">{{ formatTime(item.endTime) }}</text>
-								</view>
-								<view class="history-result" :class="item.result">
-									<text class="result-text">{{ getResultText(item.result) }}</text>
-								</view>
-							</view>
+						<view class="history-list" v-if="isLoggedIn && finishedRounds.length > 0">
+							<RoundCard 
+								v-for="round in finishedRounds" 
+								:key="round.id" 
+								:round="round"
+								:is-history="true"
+								@click="viewRoundDetail"
+							/>
+						</view>
+						<view class="loading-state" v-else-if="isLoggedIn && historyLoading">
+							<text class="loading-text">加载中...</text>
 						</view>
 						<view class="empty-state" v-else>
 							<text class="empty-text">{{ isLoggedIn ? '暂无历史记录' : '登录后查看历史记录' }}</text>
@@ -79,10 +80,13 @@
 
 <script>
 import UserStatsCard from '@/components/profile/UserStatsCard.vue'
+import RoundCard from '@/components/rounds/RoundCard.vue'
+import { roundsApi, userApi, handleApiError } from '@/api/rounds.js'
 
 export default {
 	components: {
-		UserStatsCard
+		UserStatsCard,
+		RoundCard
 	},
 	data() {
 		return {
@@ -96,16 +100,16 @@ export default {
 			},
 			userStats: {
 				totalRounds: 0,
-				winRate: 0,
-				createdRounds: 0,
-				participatedRounds: 0,
-				wins: 0,
-				losses: 0,
-				draws: 0,
-				winStreak: 0,
-				totalScore: 0
+				winRounds: 0,
+				loseRounds: 0,
+				drawRounds: 0,
+				totalAmount: 0,
+				winAmount: 0,
+				winRate: 0
 			},
-			historyList: [] // 历史记录列表
+			historyList: [], // 历史记录列表
+			finishedRounds: [],
+			historyLoading: false
 		}
 	},
 	computed: {
@@ -126,20 +130,39 @@ export default {
 			// 使用新的认证系统检查登录状态
 			this.isLoggedIn = this.$auth.isLoggedIn()
 			if (this.isLoggedIn) {
-				this.loadUserInfo()
-				this.loadUserStats()
-				if (this.activeTab === 'history') {
-					this.loadHistoryList()
-				}
-			} else {
+			// 先初始化默认数据，避免异步加载期间出现undefined
+			this.userStats = {
+				totalRounds: 0,
+				winRounds: 0,
+				loseRounds: 0,
+				drawRounds: 0,
+				totalAmount: 0,
+				winAmount: 0,
+				winRate: 0
+			}
+			this.loadUserInfo()
+			this.loadUserStats()
+			if (this.activeTab === 'history') {
+				this.loadHistoryList()
+			}
+		} else {
 				// 重置数据
 				this.userInfo = {
 					nickname: '点击登录',
 					avatarUrl: '/static/images/default-avatar.svg',
 					description: '登录后查看完整功能'
 				}
-				this.userStats = {}
+				this.userStats = {
+					totalRounds: 0,
+					winRounds: 0,
+					loseRounds: 0,
+					drawRounds: 0,
+					totalAmount: 0,
+					winAmount: 0,
+					winRate: 0
+				}
 				this.historyList = []
+				this.finishedRounds = []
 			}
 		},
 		async loadUserInfo() {
@@ -175,53 +198,72 @@ export default {
 		},
 		async loadUserStats() {
 			try {
-				// TODO: 调用后端API获取用户统计数据
-				// const stats = await this.$api.userApi.getUserStats()
-				// 暂时使用示例数据
-				this.userStats = {
-					totalRounds: 25,
-					winRate: 72,
-					createdRounds: 8,
-					participatedRounds: 17,
-					wins: 18,
-					losses: 5,
-					draws: 2,
-					winStreak: 5,
-					totalScore: 1580
+				const response = await userApi.getUserStatistics();
+				const stats = response.data || response;
+				
+				// 验证数据完整性
+				if (!stats || typeof stats !== 'object') {
+					throw new Error('返回数据格式错误');
 				}
+				
+				// 直接使用后端返回的数据，包括winRate，并提供默认值
+				this.userStats = {
+					totalRounds: stats.totalRounds || 0,
+					winRounds: stats.winRounds || 0,
+					loseRounds: stats.loseRounds || 0,
+					drawRounds: stats.drawRounds || 0,
+					totalAmount: Math.round((stats.totalAmount || 0) / 100), // 转换为元
+					winAmount: Math.round((stats.winAmount || 0) / 100), // 转换为元
+					winRate: ((stats.winRate || 0) * 100).toFixed(1) // 后端返回小数，转换为百分比
+				};
 			} catch (error) {
-				console.error('加载用户统计失败:', error)
-				this.userStats = {}
+				console.error('加载用户统计数据失败:', error);
+				uni.showToast({
+					title: '加载统计数据失败',
+					icon: 'none'
+				});
+				// 出错时使用默认数据
+				this.userStats = {
+					totalRounds: 0,
+					winRounds: 0,
+					loseRounds: 0,
+					drawRounds: 0,
+					totalAmount: 0,
+					winAmount: 0,
+					winRate: 0
+				};
 			}
 		},
 		async loadHistoryList() {
 			try {
-				// TODO: 调用后端API获取历史记录
-				// const history = await this.$api.roundApi.getUserHistory()
-				// 暂时使用示例数据
-				this.historyList = [
-					{
-						id: 1,
-						mahjongType: '四川麻将',
-						endTime: '2024-01-15 14:30:00',
-						result: 'win'
-					},
-					{
-						id: 2,
-						mahjongType: '广东麻将',
-						endTime: '2024-01-14 20:15:00',
-						result: 'lose'
-					},
-					{
-						id: 3,
-						mahjongType: '国标麻将',
-						endTime: '2024-01-13 16:45:00',
-						result: 'draw'
-					}
-				]
+				this.historyLoading = true
+				const response = await roundsApi.getMyFinishedRounds()
+				
+				if (response && response.content) {
+					// 映射后端字段为前端camelCase格式
+					this.finishedRounds = response.content.map(round => ({
+						id: round.round_id || round.id,
+						title: round.title,
+						mahjongType: round.mahjong_type || round.mahjongType,
+						multiplier: round.base_amount || round.baseAmount || round.multiplier,
+						status: round.status,
+						createdAt: round.created_at || round.createdAt,
+						updatedAt: round.updated_at || round.updatedAt,
+						finishedAt: round.finished_at || round.finishedAt,
+						creatorId: round.creator_id || round.creatorId,
+						// 保持participants原始数据结构，包含total_amount字段
+						participants: round.participants || [],
+						recordCount: round.record_count || round.recordCount || 0
+					}))
+				} else {
+					this.finishedRounds = []
+				}
 			} catch (error) {
 				console.error('加载历史记录失败:', error)
-				this.historyList = []
+				handleApiError(error)
+				this.finishedRounds = []
+			} finally {
+				this.historyLoading = false
 			}
 		},
 		handleLogin() {
@@ -250,6 +292,11 @@ export default {
 				}
 			}
 		},
+		viewRoundDetail(round) {
+			uni.navigateTo({
+				url: `/pages/round-detail/round-detail?id=${round.id}`
+			})
+		},
 		// 下拉刷新触发
 		onRefresh() {
 			this.refresherTriggered = true
@@ -275,10 +322,7 @@ export default {
 				}
 			} catch (error) {
 				console.error('刷新数据失败:', error)
-				uni.showToast({
-					title: '刷新失败',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			} finally {
 				// 延迟一点时间再关闭刷新状态，提供更好的用户体验
 				setTimeout(() => {
@@ -326,13 +370,18 @@ export default {
 							avatar: '/static/images/default-avatar.svg',
 							description: '登录后查看完整功能'
 						}
-						this.userStats = {}
+						this.userStats = {
+							totalRounds: 0,
+							winRounds: 0,
+							loseRounds: 0,
+							drawRounds: 0,
+							totalAmount: 0,
+							winAmount: 0,
+							winRate: 0
+						}
 						this.historyList = []
 						
-						uni.showToast({
-							title: '已退出登录',
-							icon: 'success'
-						})
+						// uni.showToast() - 已屏蔽
 					}
 				}
 			})

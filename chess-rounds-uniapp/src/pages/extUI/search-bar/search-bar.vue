@@ -43,37 +43,22 @@
 		},
 		methods: {
 			search(res) {
-				uni.showToast({
-					title: '搜索：' + res.value,
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			input(res) {
 				console.log('----input:', res)
 			},
 			clear(res) {
-				uni.showToast({
-					title: 'clear事件，清除值为：' + res.value,
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			blur(res) {
-				uni.showToast({
-					title: 'blur事件，输入值为：' + res.value,
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			focus(e) {
-				uni.showToast({
-					title: 'focus事件，输出值为：' + e.value,
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			cancel(res) {
-				uni.showToast({
-					title: '点击取消，输入值为：' + res.value,
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			}
 		},
 		onBackPress() {

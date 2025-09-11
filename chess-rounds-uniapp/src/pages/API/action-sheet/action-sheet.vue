@@ -38,10 +38,7 @@
 					},
 					success: (e) => {
 						console.log(e.tapIndex);
-						uni.showToast({
-							title: "点击了第" + e.tapIndex + "个选项",
-							icon: "none"
-						})
+						// uni.showToast() - 已屏蔽
 					}
 				})
 			},

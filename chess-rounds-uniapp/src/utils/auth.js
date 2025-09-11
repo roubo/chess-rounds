@@ -101,10 +101,7 @@ export class AuthManager {
 				url: '/pages/login/login'
 			})
 			
-			uni.showToast({
-				title: '已退出登录',
-				icon: 'success'
-			})
+			// // uni.showToast() - 已屏蔽
 		} catch (error) {
 			console.error('退出登录失败:', error)
 			// 即使后端调用失败，也要清除本地信息
@@ -122,10 +119,7 @@ export class AuthManager {
 	static checkLoginAndRedirect(showToast = true) {
 		if (!this.isLoggedIn()) {
 			if (showToast) {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				})
+				// // uni.showToast() - 已屏蔽
 			}
 			
 			setTimeout(() => {

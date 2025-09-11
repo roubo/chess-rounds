@@ -122,26 +122,17 @@ export default {
 					console.log('微信头像上传成功:', uploadResult)
 					this.currentAvatar = this.$auth.getAvatarUrl(uploadResult.url)
 					uni.hideLoading()
-					uni.showToast({
-						title: '头像已更新',
-						icon: 'success'
-					})
+					// uni.showToast() - 已屏蔽
 				} catch (uploadError) {
 					console.error('微信头像上传失败:', uploadError)
 					uni.hideLoading()
-					uni.showToast({
-						title: '头像上传失败: ' + uploadError.message,
-						icon: 'none'
-					})
+					// uni.showToast() - 已屏蔽
 					// 上传失败时使用默认头像
 					this.currentAvatar = '/static/images/default-avatar.png'
 				}
 			} else {
 				console.error('获取的avatarUrl类型不正确:', typeof avatarUrl, avatarUrl)
-				uni.showToast({
-					title: '头像获取失败，请重试',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			}
 		},
 		
@@ -164,27 +155,18 @@ export default {
 						console.log('图片上传成功:', uploadResult)
 						this.currentAvatar = this.$auth.getAvatarUrl(uploadResult.url)
 						uni.hideLoading()
-						uni.showToast({
-							title: '头像已更新',
-							icon: 'success'
-						})
+						// uni.showToast() - 已屏蔽
 					} catch (uploadError) {
 						console.error('图片上传失败:', uploadError)
 						uni.hideLoading()
-						uni.showToast({
-							title: '头像上传失败: ' + uploadError.message,
-							icon: 'none'
-						})
+						// uni.showToast() - 已屏蔽
 						// 上传失败时使用默认头像
 						this.currentAvatar = '/static/images/default-avatar.png'
 					}
 				},
 				fail: (err) => {
 					console.error('选择图片失败:', err)
-					uni.showToast({
-						title: '选择图片失败',
-						icon: 'none'
-					})
+					// uni.showToast() - 已屏蔽
 				}
 			})
 		},
@@ -192,10 +174,7 @@ export default {
 		// 保存用户信息
 		async saveProfile() {
 			if (!this.canSave) {
-				uni.showToast({
-					title: '请完善头像和昵称',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 				return
 			}
 			
@@ -303,10 +282,7 @@ export default {
 				console.log('本地用户信息已更新:', updatedUserInfo)
 				
 				uni.hideLoading()
-				uni.showToast({
-					title: '保存成功',
-					icon: 'success'
-				})
+				// uni.showToast() - 已屏蔽
 				
 				// 根据重定向参数跳转
 				setTimeout(() => {
@@ -332,11 +308,7 @@ export default {
 				}
 				
 				// 其他错误显示提示
-				uni.showToast({
-					title: error.message || '保存失败，请重试',
-					icon: 'none',
-					duration: 2000
-				})
+				// uni.showToast() - 已屏蔽
 			}
 		},
 		

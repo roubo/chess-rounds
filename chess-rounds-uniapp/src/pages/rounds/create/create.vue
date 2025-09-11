@@ -111,10 +111,7 @@ export default {
 		},
 		createRound() {
 			if (!this.isFormValid) {
-				uni.showToast({
-					title: '请完善表单信息',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 				return
 			}
 			
@@ -125,10 +122,7 @@ export default {
 			// 模拟API调用
 			setTimeout(() => {
 				uni.hideLoading()
-				uni.showToast({
-					title: '创建成功',
-					icon: 'success'
-				})
+				// uni.showToast() - 已屏蔽
 				
 				// 返回上一页
 				setTimeout(() => {

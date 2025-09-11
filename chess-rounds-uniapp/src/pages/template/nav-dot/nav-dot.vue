@@ -53,10 +53,7 @@ export default {
 		}
 	},
 	onNavigationBarButtonTap(e) {
-		uni.showToast({
-			title: e.index === 0 ? '你点了消息按钮' : '你点了关注按钮', 
-			icon: 'none'
-		});
+		// uni.showToast() - 已屏蔽;
 		// 取消红点或者角标 
 		this.setStyle(e.index,false);
 	}

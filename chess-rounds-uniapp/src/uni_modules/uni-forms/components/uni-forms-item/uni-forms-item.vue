@@ -277,10 +277,7 @@
 							this.errMsg = !result ? '' : result.errorMessage;
 						}
 						if (errShowType === 'toast') {
-							uni.showToast({
-								title: result.errorMessage || '校验错误',
-								icon: 'none'
-							});
+							// // uni.showToast() - 已屏蔽;
 						}
 						if (errShowType === 'modal') {
 							uni.showModal({

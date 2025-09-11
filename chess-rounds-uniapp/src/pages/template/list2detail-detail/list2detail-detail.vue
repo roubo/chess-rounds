@@ -107,15 +107,11 @@
 								}
 							});
 						} else {
-							uni.showToast({
-								title: '未检测到可用的微信分享服务'
-							});
+							// uni.showToast() - 已屏蔽;
 						}
 					},
 					fail: (error) => {
-						uni.showToast({
-							title: '获取分享服务失败'
-						});
+						// uni.showToast() - 已屏蔽;
 					}
 				});
 			}

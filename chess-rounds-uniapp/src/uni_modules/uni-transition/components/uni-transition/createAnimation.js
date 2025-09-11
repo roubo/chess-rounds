@@ -1,5 +1,4 @@
 // const defaultOption = {
-// 	duration: 300,
 // 	timingFunction: 'linear',
 // 	delay: 0,
 // 	transformOrigin: '50% 50% 0'

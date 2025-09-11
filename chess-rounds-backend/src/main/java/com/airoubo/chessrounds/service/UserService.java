@@ -5,9 +5,11 @@ import com.airoubo.chessrounds.dto.user.UserInfoResponse;
 import com.airoubo.chessrounds.dto.user.UserLoginRequest;
 import com.airoubo.chessrounds.dto.user.UserLoginResponse;
 import com.airoubo.chessrounds.entity.User;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -170,19 +172,36 @@ public interface UserService {
     /**
      * 用户统计信息内部类
      */
-    class UserStatistics {
+    public static class UserStatistics implements Serializable {
+        @JsonProperty("totalRounds")
         private Long totalRounds;
+        
+        @JsonProperty("winRounds")
         private Long winRounds;
+        
+        @JsonProperty("loseRounds")
+        private Long loseRounds;
+        
+        @JsonProperty("drawRounds")
+        private Long drawRounds;
+        
+        @JsonProperty("totalAmount")
         private Long totalAmount;
+        
+        @JsonProperty("winAmount")
         private Long winAmount;
+        
+        @JsonProperty("winRate")
         private Double winRate;
         
         public UserStatistics() {
         }
         
-        public UserStatistics(Long totalRounds, Long winRounds, Long totalAmount, Long winAmount) {
+        public UserStatistics(Long totalRounds, Long winRounds, Long loseRounds, Long drawRounds, Long totalAmount, Long winAmount) {
             this.totalRounds = totalRounds;
             this.winRounds = winRounds;
+            this.loseRounds = loseRounds;
+            this.drawRounds = drawRounds;
             this.totalAmount = totalAmount;
             this.winAmount = winAmount;
             this.winRate = totalRounds > 0 ? (double) winRounds / totalRounds : 0.0;
@@ -203,6 +222,22 @@ public interface UserService {
         
         public void setWinRounds(Long winRounds) {
             this.winRounds = winRounds;
+        }
+        
+        public Long getLoseRounds() {
+            return loseRounds;
+        }
+        
+        public void setLoseRounds(Long loseRounds) {
+            this.loseRounds = loseRounds;
+        }
+        
+        public Long getDrawRounds() {
+            return drawRounds;
+        }
+        
+        public void setDrawRounds(Long drawRounds) {
+            this.drawRounds = drawRounds;
         }
         
         public Long getTotalAmount() {

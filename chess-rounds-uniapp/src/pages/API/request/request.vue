@@ -51,12 +51,7 @@
 					},
 					success: (res) => {
 						console.log('request success', res)
-						uni.showToast({
-							title: '请求成功',
-							icon: 'success',
-							mask: true,
-							duration: duration
-						});
+						// uni.showToast() - 已屏蔽;
 						this.res = '请求结果 : ' + JSON.stringify(res);
 					},
 					fail: (err) => {
@@ -81,12 +76,7 @@
 					}
 				}).then(res => {
 					console.log('request success', res[1]);
-					uni.showToast({
-						title: '请求成功',
-						icon: 'success',
-						mask: true,
-						duration: duration
-					});
+					// uni.showToast() - 已屏蔽;
 					this.res = '请求结果 : ' + JSON.stringify(res[1]);
 					this.loading = false;
 				}).catch(err => {
@@ -109,12 +99,7 @@
 					}
 				}).then(res => {
 					console.log('request success', res);
-					uni.showToast({
-						title: '请求成功',
-						icon: 'success',
-						mask: true,
-						duration: duration
-					});
+					// uni.showToast() - 已屏蔽;
 					this.res = '请求结果 : ' + JSON.stringify(res);
 
 					this.loading = false;
@@ -161,12 +146,7 @@
 					});
 				} else {
 					console.log('request success', res)
-					uni.showToast({
-						title: '请求成功',
-						icon: 'success',
-						mask: true,
-						duration: duration
-					});
+					// uni.showToast() - 已屏蔽;
 					this.res = '请求结果 : ' + JSON.stringify(res);
 				}
 				this.loading = false;

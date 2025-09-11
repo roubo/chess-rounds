@@ -73,9 +73,7 @@
 		},
 		methods: {
 			onClick() {
-				uni.showToast({
-					title: '列表被点击'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			avatar(count) {
 				let arr = []

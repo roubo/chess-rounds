@@ -53,6 +53,7 @@
 /Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/chessrounds/controller/FileController.java
 /Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/airoubo/chessrounds/dto/user/UpdateProfileRequest.java
 /Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/airoubo/chessrounds/enums/RoundStatus.java
+/Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/airoubo/chessrounds/dto/request/StartRoundRequest.java
 /Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/airoubo/chessrounds/entity/UserStatistics.java
 /Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/airoubo/chessrounds/service/impl/WechatApiServiceImpl.java
 /Users/roubo/code/emotion/chess-rounds/chess-rounds-backend/src/main/java/com/airoubo/chessrounds/entity/ParticipantRecord.java

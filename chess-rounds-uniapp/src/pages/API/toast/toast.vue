@@ -36,22 +36,13 @@
 		// #endif
 		methods: {
 			toast1Tap: function() {
-				uni.showToast({
-					title: "默认"
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			toast2Tap: function() {
-				uni.showToast({
-					title: "duration 3000",
-					duration: 3000
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			toast3Tap: function() {
-				uni.showToast({
-					title: "loading",
-					icon: "loading",
-					duration: 5000
-				})
+				// uni.showToast() - 已屏蔽
 				// #ifdef MP-ALIPAY
 				this._showTimer = setTimeout(() => {
 					// icon 是 loading 时，showToast 实际执行的是 showLoading
@@ -63,17 +54,11 @@
 
 			},
 			toast4Tap: function() {
-				uni.showToast({
-					title: "logo",
-					image: "../../../static/uni.png"
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			// #ifdef APP-PLUS
 			toast5Tap: function() {
-				uni.showToast({
-					title: "显示一段轻提示",
-					position: 'bottom'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			// #endif
 			hideToast: function() {

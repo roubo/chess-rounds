@@ -7,33 +7,33 @@
 		
 		<view class="stats-grid">
 			<view class="stat-item">
-				<view class="stat-value">{{ stats.totalRounds }}</view>
+				<view class="stat-value">{{ stats.totalRounds || 0 }}</view>
 				<text class="stat-label">总回合数</text>
 			</view>
 			
 			<view class="stat-item">
-				<view class="stat-value">{{ stats.winRate }}%</view>
+				<view class="stat-value" :class="winRateClass">{{ formatWinRate(stats.winRate) }}%</view>
 				<text class="stat-label">胜率</text>
 			</view>
 			
 			<view class="stat-item">
-				<view class="stat-value">¥{{ stats.totalAmount || 0 }}</view>
-				<text class="stat-label">金额</text>
+				<view class="stat-value" :class="totalAmountClass">{{ formatAmount(stats.totalAmount) }}</view>
+				<text class="stat-label">总盈亏</text>
 			</view>
 			
 			<view class="stat-item win-item">
-				<view class="stat-value">{{ stats.wins }}</view>
+				<view class="stat-value">{{ stats.winRounds || 0 }}</view>
 				<text class="stat-label">胜场</text>
 			</view>
 			
 			<view class="stat-item lose-item">
-				<view class="stat-value">{{ stats.losses }}</view>
+				<view class="stat-value">{{ stats.loseRounds || 0 }}</view>
 				<text class="stat-label">负场</text>
 			</view>
 			
 			<view class="stat-item draw-item">
-				<view class="stat-value">{{ stats.draws }}</view>
-				<text class="stat-label">平局</text>
+				<view class="stat-value">{{ stats.drawRounds || 0 }}</view>
+				<text class="stat-label">平场</text>
 			</view>
 		</view>
 	</view>
@@ -49,10 +49,38 @@ export default {
 				totalRounds: 0,
 				winRate: 0,
 				totalAmount: 0,
-				wins: 0,
-				losses: 0,
-				draws: 0
+				winAmount: 0,
+				winRounds: 0,
+				loseRounds: 0,
+				drawRounds: 0
 			})
+		}
+	},
+	computed: {
+		winRateClass() {
+			const rate = this.stats.winRate || 0
+			if (rate >= 60) return 'positive-value'
+			if (rate >= 40) return 'neutral-value'
+			return 'negative-value'
+		},
+		totalAmountClass() {
+			const amount = this.stats.totalAmount || 0
+			if (amount > 0) return 'positive-value'
+			if (amount < 0) return 'negative-value'
+			return 'neutral-value'
+		},
+
+
+	},
+	methods: {
+		formatAmount(amount) {
+			if (!amount) return '¥0'
+			const absAmount = Math.abs(amount)
+			return amount >= 0 ? `¥${absAmount}` : `-¥${absAmount}`
+		},
+		formatWinRate(rate) {
+			if (!rate) return '0.0'
+			return parseFloat(rate).toFixed(1)
 		}
 	}
 }
@@ -124,6 +152,18 @@ export default {
 	font-weight: bold;
 	color: #2C3E50;
 	margin-bottom: 8rpx;
+}
+
+.stat-value.positive-value {
+	color: #27AE60;
+}
+
+.stat-value.negative-value {
+	color: #E74C3C;
+}
+
+.stat-value.neutral-value {
+	color: #F39C12;
 }
 
 .win-item .stat-value {

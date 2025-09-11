@@ -59,6 +59,42 @@
               </view>
             </view>
           </view>
+          
+          <!-- 收盘金额显示 -->
+          <view v-if="isRoundFinished" class="final-amounts-section">
+            <view class="final-amounts-header">
+              <text class="final-amounts-title">收盘金额</text>
+              <text class="final-amounts-subtitle">倍率 × 筹码数</text>
+            </view>
+            <view class="final-amounts-list">
+              <!-- 台板收盘金额 -->
+              <view v-if="hasTableBoardParticipant" class="final-amount-item table-board">
+                <image class="participant-avatar" src="/static/images/default-avatar.png" mode="aspectFill" />
+                <view class="participant-info">
+                  <text class="participant-name">台板</text>
+                  <text class="participant-final-amount" :class="{ 'positive': finalTableBoardAmount > 0, 'negative': finalTableBoardAmount < 0 }">
+                    {{ formatAmount(finalTableBoardAmount) }}
+                  </text>
+                </view>
+              </view>
+              
+              <!-- 参与者收盘金额 -->
+              <view 
+                v-for="participant in participantsWithFinalAmounts" 
+                :key="participant.id"
+                class="final-amount-item"
+                :class="{ 'current-user': participant.id === currentUserId }"
+              >
+                <image class="participant-avatar" :src="getParticipantAvatarUrl(participant)" mode="aspectFill" />
+                <view class="participant-info">
+                  <text class="participant-name">{{ (participant.user_info && participant.user_info.nickname) || participant.name || '未知用户' }}</text>
+                  <text class="participant-final-amount" :class="{ 'positive': participant.finalAmount > 0, 'negative': participant.finalAmount < 0 }">
+                    {{ formatAmount(participant.finalAmount) }}
+                  </text>
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -84,7 +120,10 @@
               class="record-item"
             >
               <view class="record-header">
-                <text class="record-title">第{{ Array.isArray(gameRecords) ? gameRecords.length - index : 0 }}局</text>
+                <view class="record-title-section">
+                  <text class="record-title">第{{ Array.isArray(gameRecords) ? gameRecords.length - index : 0 }}局</text>
+                  <text class="record-duration">耗时{{ calculateGameDuration(record, index) }}分钟</text>
+                </view>
                 <text class="record-time">{{ formatTime(record.createdAt) }}</text>
               </view>
               
@@ -120,7 +159,7 @@
 
 
     <!-- 添加记录弹窗 -->
-    <uni-popup ref="addRecordPopup" type="bottom" background-color="#fff">
+    <uni-popup ref="addRecordPopup" type="bottom" background-color="#fff" :is-mask-click="false">
       <view class="add-record-modal">
         <view class="modal-header">
           <text class="modal-title">添加第{{ Array.isArray(gameRecords) ? gameRecords.length + 1 : 1 }}局记录</text>
@@ -174,7 +213,8 @@
                    type="digit"
                    placeholder="筹码数"
                    :data-participant-id="participant.id"
-                   @input="onAmountInput"
+                   @input="onAmountChange"
+                   @blur="onAmountBlur"
                  />
               </view>
             </view>
@@ -202,15 +242,40 @@
         </view>
       </view>
     </uni-popup>
+
+    <!-- 收盘确认弹窗 -->
+    <uni-popup ref="endRoundPopup" type="dialog">
+      <uni-popup-dialog 
+        type="warn" 
+        cancelText="取消" 
+        confirmText="确认收盘"
+        title="收盘确认"
+        content="确定要收盘吗？收盘后将无法继续添加记录，此操作不可撤销。"
+        @confirm="confirmEndRound"
+        @close="closeEndRoundConfirm"
+      ></uni-popup-dialog>
+    </uni-popup>
+
+    <!-- 底部操作按钮 -->
+    <view v-if="canEndRound && !isAddRecordModalVisible" class="action-buttons">
+      <button 
+        class="btn-danger btn-block" 
+        @click="showEndRoundConfirm"
+      >
+        收盘
+      </button>
+    </view>
   </view>
 </template>
 
 <script>
 import { roundsApi, handleApiError } from '@/api/rounds'
 import config from '@/config/api'
+import toastMixin from '@/mixins/toast'
 
 export default {
   name: 'RoundDetail',
+  mixins: [toastMixin],
   data() {
     return {
       roundId: null,
@@ -229,7 +294,8 @@ export default {
         participantAmounts: {},
         participantAbsAmounts: {},
         participantSigns: {}
-      }
+      },
+      isAddRecordModalVisible: false // 控制添加记录弹窗显示状态
     }
   },
   
@@ -253,14 +319,56 @@ export default {
     },
     
     isParticipant() {
-      return this.participants.some(p => {
-        const participantUserId = (p.user_info && p.user_info.user_id) || p.id
-        return participantUserId == this.currentUserId
+      console.log('=== isParticipant 调试信息 ===')
+      console.log('currentUserId:', this.currentUserId, 'type:', typeof this.currentUserId)
+      console.log('participants:', this.participants)
+      
+      if (!this.currentUserId || !Array.isArray(this.participants)) {
+        console.log('基础检查失败 - currentUserId:', this.currentUserId, 'participants isArray:', Array.isArray(this.participants))
+        return false
+      }
+      
+      const result = this.participants.some(p => {
+        const participantUserId = (p.user_info && p.user_info.user_id) || p.user_id || p.id
+        console.log('检查参与者:', {
+          participant: p,
+          participantUserId: participantUserId,
+          participantUserIdType: typeof participantUserId,
+          currentUserId: this.currentUserId,
+          currentUserIdType: typeof this.currentUserId,
+          stringMatch: String(participantUserId) === String(this.currentUserId),
+          numberMatch: Number(participantUserId) === Number(this.currentUserId)
+        })
+        
+        // 使用严格比较和字符串转换确保兼容性
+        return String(participantUserId) === String(this.currentUserId) || 
+               Number(participantUserId) === Number(this.currentUserId)
       })
+      
+      console.log('isParticipant 最终结果:', result)
+      return result
     },
     
     canAddRecord() {
-      return ((this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress') && this.isParticipant
+      console.log('=== canAddRecord 调试信息 ===')
+      console.log('roundDetail:', this.roundDetail)
+      console.log('roundDetail.status:', this.roundDetail && this.roundDetail.status)
+      console.log('isParticipant:', this.isParticipant)
+      
+      const statusCheck = ((this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress')
+      console.log('状态检查结果:', statusCheck)
+      
+      const result = statusCheck && this.isParticipant
+      console.log('canAddRecord 最终结果:', result)
+      
+      return result
+    },
+    
+    canEndRound() {
+      // 只有创建者或参与者可以收盘，且回合状态为进行中，已收盘的回合隐藏收盘按钮
+      const isInProgress = (this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress'
+      const isFinished = (this.roundDetail && this.roundDetail.status) === 'finished'
+      return isInProgress && !isFinished && (this.isCreator || this.isParticipant)
     },
     
 
@@ -305,15 +413,9 @@ export default {
                       record.participantAmounts[String(participantId)] || 0
             }
             
-            console.log('累计计算 - 参与者:', participant.name || participant.user_info?.nickname, 
-                       'userId:', userId, 'participantId:', participantId, 
-                       'record amounts:', record.participantAmounts, 'amount:', amount)
-            
             return total + amount
           }, 0)
         }
-        
-        console.log('参与者累计结果:', participant.name || participant.user_info?.nickname, 'totalAmount:', totalAmount)
         
         return {
           ...participant,
@@ -326,7 +428,33 @@ export default {
       })
     },
     
-
+    // 检查回合是否已收盘
+    isRoundFinished() {
+      return (this.roundDetail && this.roundDetail.status) === 'finished'
+    },
+    
+    // 计算参与者收盘金额（倍率 × 筹码数）
+    participantsWithFinalAmounts() {
+      if (!this.isRoundFinished || !Array.isArray(this.participants)) {
+        return []
+      }
+      const multiplier = (this.roundDetail && this.roundDetail.multiplier) || 1
+      return this.participantsWithAmounts.map(participant => {
+        return {
+          ...participant,
+          finalAmount: participant.totalAmount * multiplier
+        }
+      })
+    },
+    
+    // 计算台板收盘金额（倍率 × 筹码数）
+    finalTableBoardAmount() {
+      if (!this.isRoundFinished) {
+        return 0
+      }
+      const multiplier = (this.roundDetail && this.roundDetail.multiplier) || 1
+      return this.tableBoardAmount * multiplier
+    },
     
     // 检查是否平衡
     isBalanced() {
@@ -357,8 +485,6 @@ export default {
   },
   
   onLoad(options) {
-    console.log('回合详情页面参数:', options)
-    
     // 支持从回合列表跳转和扫码进入
     this.roundId = options.id || options.roundId || options.scene
     
@@ -380,10 +506,7 @@ export default {
     if (this.roundId) {
       this.loadRoundDetail()
     } else {
-      uni.showToast({
-        title: '回合ID不存在',
-        icon: 'error'
-      })
+      // uni.showToast() - 已屏蔽
       setTimeout(() => {
         uni.navigateBack()
       }, 1500)
@@ -391,10 +514,21 @@ export default {
   },
   
   onShow() {
-    // 页面显示时重新加载数据，确保数据是最新的
+    // 页面显示时重新获取用户ID和加载数据，确保数据是最新的
+    const userInfo = uni.getStorageSync('userInfo')
+    this.currentUserId = userInfo && (userInfo.userId || userInfo.user_id || userInfo.id)
+    console.log('=== onShow 重新获取用户ID ===')
+    console.log('onShow userInfo:', userInfo)
+    console.log('onShow获取的userId:', this.currentUserId, 'type:', typeof this.currentUserId)
+    
     if (this.roundId) {
       this.loadRoundDetail()
     }
+    
+    // 强制更新视图
+    this.$nextTick(() => {
+      this.$forceUpdate()
+    })
   },
   
   onUnload() {
@@ -416,8 +550,6 @@ export default {
         return []
       }
       
-      console.log('转换记录数据，原始records:', records)
-      
       return records.map(record => {
         const transformedRecord = {
           id: record.record_id || record.id,
@@ -427,34 +559,25 @@ export default {
           participantAmounts: {}
         }
         
-        console.log('处理记录:', record)
-        
         // 检查是否已经有participantAmounts（直接格式）
         if (record.participantAmounts) {
-          console.log('使用现有participantAmounts:', record.participantAmounts)
           transformedRecord.participantAmounts = { ...record.participantAmounts }
         }
         // 否则从participant_details转换（真实API数据格式）
         else if (record.participant_details && Array.isArray(record.participant_details)) {
-          console.log('从participant_details转换:', record.participant_details)
           record.participant_details.forEach(detail => {
-            console.log('处理participant detail:', detail)
             if (detail.user_info) {
               // 使用user_id作为key
               const userId = detail.user_info.user_id
               transformedRecord.participantAmounts[userId] = detail.amount_change
-              console.log('添加participantAmount:', userId, detail.amount_change)
               
               // 如果是台板用户，也添加table-board key用于兼容
               if (detail.user_info.nickname && detail.user_info.nickname.includes('台板')) {
                 transformedRecord.participantAmounts['table-board'] = detail.amount_change
-                console.log('添加台板participantAmount:', detail.amount_change)
               }
             }
           })
         }
-        
-        console.log('转换后的记录participantAmounts:', transformedRecord.participantAmounts)
         return transformedRecord
       })
     },
@@ -475,36 +598,32 @@ export default {
           roundsApi.getGameRecords(this.roundId)
         ])
         
-        // 调试日志
-        console.log('API响应数据:', {
-          roundRes,
-          participantsRes,
-          recordsRes
-        })
-        
         // 适配后端响应格式：可能直接返回数据，也可能包装在 {code, data} 中
         if (roundRes) {
           this.roundDetail = roundRes.code === 200 ? roundRes.data : roundRes
-          console.log('解析后的roundDetail:', this.roundDetail)
+          
+          // 适配后端字段名：后端返回的是baseAmount，前端需要映射为multiplier
+          if (this.roundDetail && this.roundDetail.baseAmount !== undefined) {
+            this.roundDetail.multiplier = this.roundDetail.baseAmount
+          } else if (this.roundDetail && this.roundDetail.base_amount !== undefined) {
+            this.roundDetail.multiplier = this.roundDetail.base_amount
+          }
         }
         
         if (participantsRes) {
           this.participants = (participantsRes.code === 200 ? participantsRes.data : participantsRes) || []
-          console.log('解析后的participants:', this.participants)
         }
         
         if (recordsRes) {
-          console.log('recordsRes:', recordsRes)
           // recordsRes直接就是数据数组，不需要检查code字段
           const rawRecords = recordsRes || []
           // 转换API数据格式为前端期望的格式
           this.gameRecords = this.transformRecordsData(rawRecords)
-          console.log('解析后的gameRecords:', this.gameRecords)
         }
         
         // 如果没有回合详情但有参与者数据，创建一个基本的回合详情对象
-        if (!this.roundDetail && this.participants.length > 0) {
-          console.log('创建临时回合详情对象')
+        // 注意：只有在roundRes为空或无效时才创建临时对象，避免覆盖已映射的数据
+        if (!roundRes && !this.roundDetail && this.participants.length > 0) {
           // 检查参与者中是否有台板
           const hasTableBoard = this.participants.some(p => p.id === 'table-board' || p.role === 'table_board' || p.role === 'table')
           this.roundDetail = {
@@ -512,7 +631,7 @@ export default {
             name: `回合 ${this.roundId}`,
             status: 'ACTIVE',
             hasTableBoard: hasTableBoard,
-            multiplier: 1,
+            multiplier: 1, // 设置默认倍率为1，确保倍率能够显示
             createdAt: new Date().toISOString()
           }
         }
@@ -526,16 +645,21 @@ export default {
           this.roundDetail.hasTableBoard = hasTableBoard
         }
         
-        // 设置当前用户ID
-        this.currentUserId = uni.getStorageSync('userId')
+        // 设置当前用户ID - 从userInfo中获取
+        const userInfo = uni.getStorageSync('userInfo')
+        this.currentUserId = userInfo && (userInfo.userId || userInfo.user_id || userInfo.id)
+        console.log('=== loadRoundDetail 设置用户ID ===')
+        console.log('userInfo:', userInfo)
+        console.log('从userInfo获取的userId:', this.currentUserId, 'type:', typeof this.currentUserId)
+        
+        // 强制触发响应式更新，确保computed属性重新计算
+        this.$nextTick(() => {
+          this.$forceUpdate()
+        })
         
         // 显示加载成功提示
         if (this.roundDetail && this.participants.length > 0) {
-          uni.showToast({
-            title: '数据加载成功',
-            icon: 'success',
-            duration: 1500
-          })
+          // uni.showToast() - 已屏蔽
         }
         
         // 如果需要自动加入回合，则尝试加入
@@ -571,38 +695,22 @@ export default {
       try {
         // 检查用户是否已经参与了这个回合
         if (this.isCurrentUserParticipant) {
-          console.log('用户已参与该回合，无需重复加入')
-          uni.showToast({
-            title: '您已在该回合中',
-            icon: 'success',
-            duration: 1500
-          })
+          // uni.showToast() - 已屏蔽
           return
         }
         
-        console.log('尝试自动加入回合:', this.roundId)
-        
         // 调用加入回合接口
         const joinResult = await roundsApi.joinRound(this.roundId)
-        console.log('加入回合结果:', joinResult)
         
         // 后端返回空响应体，只要没有抛出异常就表示成功
-        uni.showToast({
-          title: '成功加入回合',
-          icon: 'success',
-          duration: 1500
-        })
+        // uni.showToast() - 已屏蔽
         
         // 重新加载参与者数据
         await this.refreshParticipants()
         
       } catch (error) {
         console.error('自动加入回合失败:', error)
-        uni.showToast({
-          title: error.message || '加入回合失败',
-          icon: 'error',
-          duration: 2000
-        })
+        // uni.showToast() - 已屏蔽
       }
     },
     
@@ -612,11 +720,9 @@ export default {
     async refreshParticipants() {
       try {
         const participantsRes = await roundsApi.getRoundParticipants(this.roundId)
-        console.log('刷新参与者数据:', participantsRes)
         
         if (participantsRes) {
           this.participants = (participantsRes.code === 200 ? participantsRes.data : participantsRes) || []
-          console.log('更新后的participants:', this.participants)
         }
       } catch (error) {
         console.error('刷新参与者数据失败:', error)
@@ -637,19 +743,11 @@ export default {
           this.gameRecords = this.transformRecordsData(rawRecords)
           
           // 显示刷新成功提示
-          uni.showToast({
-            title: '数据已更新',
-            icon: 'success',
-            duration: 1000
-          })
+          // uni.showToast() - 已屏蔽
         }
       } catch (error) {
         console.error('刷新累计数据失败:', error)
-        uni.showToast({
-          title: '刷新失败',
-          icon: 'error',
-          duration: 1500
-        })
+        // uni.showToast() - 已屏蔽
       }
     },
     
@@ -672,11 +770,13 @@ export default {
         this.$set(this.newRecord.participantSigns, participant.id, '+')
       })
       
+      this.isAddRecordModalVisible = true // 设置弹窗显示状态
       this.$refs.addRecordPopup.open()
     },
     
     // 隐藏添加记录弹窗
     hideAddRecordModal() {
+      this.isAddRecordModalVisible = false // 设置弹窗隐藏状态
       this.$refs.addRecordPopup.close()
     },
     
@@ -745,13 +845,19 @@ export default {
       return chips.toString()
     },
     
-    // 金额输入处理
-    onAmountInput() {
+    // 金额输入变化处理（只更新金额，不触发自动计算）
+    onAmountChange() {
       // 更新所有参与者的实际金额
       this.participantsWithAmounts.forEach(participant => {
         this.updateParticipantAmount(participant.id)
       })
       
+      // 触发计算更新
+      this.$forceUpdate()
+    },
+    
+    // 焦点离开处理（触发自动计算）
+    onAmountBlur() {
       // 检查是否需要自动计算最后一个参与者
       const enteredCount = this.participantsWithAmounts.filter(p => {
         const absAmount = this.newRecord.participantAbsAmounts[p.id]
@@ -801,10 +907,7 @@ export default {
       try {
         // 验证数据
         if (!this.isBalanced) {
-          uni.showToast({
-            title: '金额不平衡，请检查输入',
-            icon: 'error'
-          })
+          // uni.showToast() - 已屏蔽
           return
         }
         
@@ -823,9 +926,7 @@ export default {
           const originalParticipant = this.participants.find(p => 
             (p.participant_id || p.id) === participant.id
           )
-          console.log('originalParticipant:', originalParticipant)
           const userId = originalParticipant ? (originalParticipant.user_info ? originalParticipant.user_info.user_id : originalParticipant.user_id) : null
-          console.log(userId)
           return {
             user_id: userId,
             amount_change: amountChange,
@@ -853,10 +954,7 @@ export default {
         // 适配后端响应格式
         const success = response && (response.code === 200 || response.success || !response.code)
         if (success) {
-          uni.showToast({
-            title: '记录添加成功',
-            icon: 'success'
-          })
+          // uni.showToast() - 已屏蔽
           
           // 关闭弹窗并刷新累计数据
           this.hideAddRecordModal()
@@ -882,25 +980,12 @@ export default {
     
     // 获取参与者头像
     getParticipantAvatar(participantId) {
-      console.log('=== 获取头像调试信息 ===')
-      console.log('participantId:', participantId, 'type:', typeof participantId)
-      console.log('当前participants数组长度:', this.participants?.length)
-      console.log('participants详细信息:', JSON.stringify(this.participants, null, 2))
-      
       if (!this.participants || this.participants.length === 0) {
-        console.log('participants数组为空或未定义')
         return '/static/images/default-avatar.png'
       }
       
       // 查找参与者
       const participant = this.participants.find(p => {
-        console.log('检查参与者:', JSON.stringify(p, null, 2))
-        console.log('匹配检查:')
-        console.log('  p.id === participantId:', p.id, '===', participantId, '结果:', p.id === participantId)
-        console.log('  p.participant_id === participantId:', p.participant_id, '===', participantId, '结果:', p.participant_id === participantId)
-        console.log('  p.user_id === participantId:', p.user_id, '===', participantId, '结果:', p.user_id === participantId)
-        console.log('  p.user_info?.user_id === participantId:', p.user_info?.user_id, '===', participantId, '结果:', p.user_info?.user_id === participantId)
-        
         // 支持多种ID匹配方式，重点匹配user_info.user_id
         const match = (p.user_info && p.user_info.user_id === participantId) ||
                (p.user_info && String(p.user_info.user_id) === String(participantId)) ||
@@ -912,36 +997,27 @@ export default {
                String(p.participant_id) === String(participantId) ||
                String(p.user_id) === String(participantId)
         
-        console.log('  最终匹配结果:', match)
         return match
       })
-      
-      console.log('找到的参与者:', participant ? JSON.stringify(participant, null, 2) : 'undefined')
       
       if (participant) {
         // 适配新的API格式：用户信息在user_info中
         const avatarUrl = (participant.user_info && participant.user_info.avatar_url) || participant.avatar
-        console.log('原始头像URL:', avatarUrl)
         
         // 处理相对路径的头像URL
         if (avatarUrl && avatarUrl.startsWith('/static/')) {
           const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
-          console.log('头像URL拼接:', baseURL, avatarUrl)
           return baseURL + avatarUrl
         }
         
         // 处理完整HTTP URL
         if (avatarUrl && avatarUrl.startsWith('http')) {
-          console.log('使用完整HTTP头像URL:', avatarUrl)
           return avatarUrl
         }
         
-        console.log('使用默认头像或原始URL:', avatarUrl)
         return avatarUrl || '/static/images/default-avatar.png'
       }
       
-      console.log('未找到参与者，使用默认头像')
-      console.log('=== 头像调试信息结束 ===')
       return '/static/images/default-avatar.png'
     },
     
@@ -974,13 +1050,75 @@ export default {
       // 处理相对路径的头像URL
       if (avatarUrl && avatarUrl.startsWith('/static/')) {
         const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
-        console.log('参与者头像URL拼接:', baseURL, avatarUrl)
         return baseURL + avatarUrl
       }
       
       return avatarUrl || '/static/images/default-avatar.png'
     },
     
+    // 显示收盘确认弹框
+    showEndRoundConfirm() {
+      this.$refs.endRoundPopup.open()
+    },
+    
+    // 关闭收盘确认弹框
+    closeEndRoundConfirm() {
+      this.$refs.endRoundPopup.close()
+    },
+    
+    // 确认收盘
+    async confirmEndRound() {
+      try {
+        
+        // 调用收盘API
+        await roundsApi.endRound(this.roundId)
+        
+        // 收盘成功提示
+        this.$showSuccess('收盘成功')
+        
+        // 关闭弹框
+        this.closeEndRoundConfirm()
+        
+        // 重新加载回合详情以更新状态
+        await this.loadRoundDetail()
+        
+      } catch (error) {
+        console.error('收盘失败:', error)
+        this.$showError('收盘失败，请重试')
+      }
+    },
+    
+    // 计算每局耗时（分钟）
+    calculateGameDuration(currentRecord, index) {
+      if (!currentRecord || !currentRecord.createdAt) {
+        return 0
+      }
+      
+      let previousTime
+      const reversedRecords = Array.isArray(this.gameRecords) ? this.gameRecords.slice().reverse() : []
+      const actualGameNumber = this.gameRecords.length - index // 实际局数（从1开始）
+      
+      // 如果是第一局（实际局数为1），与回合开始时间比较
+      if (actualGameNumber === 1) {
+        // 使用回合创建时间或开始时间
+        previousTime = this.roundDetail?.startedAt || this.roundDetail?.createdAt || this.roundDetail?.created_at
+      } else {
+        // 与上一局的创建时间比较（在反转数组中，上一局是index+1）
+        const previousRecord = reversedRecords[index + 1]
+        previousTime = previousRecord?.createdAt
+      }
+      
+      if (!previousTime) {
+        return 0
+      }
+      
+      const currentTime = new Date(currentRecord.createdAt)
+      const prevTime = new Date(previousTime)
+      const diffMs = currentTime - prevTime
+      const diffMinutes = Math.round(diffMs / (1000 * 60)) // 转换为分钟并四舍五入
+      
+      return Math.max(0, diffMinutes) // 确保不返回负数
+    }
 
   }
 }
@@ -994,6 +1132,7 @@ export default {
   background-color: #f8f8f8;
   display: flex;
   flex-direction: column;
+  padding-bottom: calc(92rpx + 48rpx + env(safe-area-inset-bottom));
 }
 
 .content-container {
@@ -1225,6 +1364,98 @@ export default {
   }
 }
 
+// 收盘金额区域
+.final-amounts-section {
+  margin-top: 24rpx;
+  
+  .final-amounts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16rpx;
+    
+    .final-amounts-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: $uni-text-color;
+    }
+    
+    .final-amounts-subtitle {
+      font-size: 24rpx;
+      color: $uni-text-color-grey;
+    }
+  }
+  
+  .final-amounts-list {
+    display: flex;
+    gap: 12rpx;
+    
+    .final-amount-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12rpx 8rpx;
+      background-color: #e8f5e8;
+      border-radius: 12rpx;
+      border: 1rpx solid #c3e6c3;
+      gap: 8rpx;
+      flex: 1;
+      min-width: 0;
+      
+      &.table-board {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+      }
+      
+      &.current-user {
+        border-color: $uni-color-primary;
+        background-color: lighten($uni-color-primary, 40%);
+      }
+      
+      .participant-avatar {
+        width: 60rpx;
+        height: 60rpx;
+        border-radius: 50%;
+        background-color: #ddd;
+      }
+      
+      .participant-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4rpx;
+        width: 100%;
+        
+        .participant-name {
+          font-size: 24rpx;
+          font-weight: 500;
+          color: $uni-text-color;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+        
+        .participant-final-amount {
+          font-size: 28rpx;
+          font-weight: bold;
+          color: $uni-text-color;
+          text-align: center;
+          
+          &.positive {
+            color: $uni-color-success;
+          }
+          
+          &.negative {
+            color: $uni-color-error;
+          }
+        }
+      }
+    }
+  }
+}
+
 // 每局记录区域
 .records-section {
   background-color: white;
@@ -1280,18 +1511,35 @@ export default {
       width: 60rpx;
       height: 60rpx;
       background-color: #007aff;
-      border-radius: 50%;
+      border-radius: 30rpx; /* 使用具体数值替代50% */
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative; /* 添加定位 */
+      overflow: hidden; /* 防止内容溢出 */
+      box-sizing: border-box; /* 确保盒模型一致 */
       
       .add-icon {
         color: white;
         font-size: 32rpx;
         font-weight: bold;
         line-height: 1;
+        text-align: center; /* 确保文字居中 */
+        width: 100%; /* 占满容器宽度 */
+        height: 100%; /* 占满容器高度 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      /* 添加点击效果 */
+      &:active {
+        opacity: 0.8;
+        transform: scale(0.95);
       }
     }
+    
+
   }
 }
   
@@ -1333,10 +1581,22 @@ export default {
         align-items: center;
         margin-bottom: 12rpx;
         
-        .record-title {
-          font-size: 28rpx;
-          font-weight: bold;
-          color: #333;
+        .record-title-section {
+          display: flex;
+          flex-direction: column;
+          gap: 4rpx;
+          
+          .record-title {
+            font-size: 28rpx;
+            font-weight: bold;
+            color: #333;
+          }
+          
+          .record-duration {
+            font-size: 22rpx;
+            color: #999;
+            font-weight: normal;
+          }
         }
         
         .record-time {
@@ -1676,5 +1936,54 @@ export default {
       }
     }
   }
+}
+
+// 底部操作按钮样式
+.action-buttons {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx 30rpx calc(24rpx + env(safe-area-inset-bottom)) 30rpx;
+  background: white;
+  border-top: 1rpx solid #f0f0f0;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.btn-danger {
+  background: #ff4757;
+  color: #fff;
+  border: none;
+  border-radius: 14rpx;
+  height: 92rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(255, 71, 87, 0.3);
+  
+  &:disabled {
+    background: #ffb3ba;
+    color: #fff;
+    opacity: 0.6;
+    transform: none;
+  }
+  
+  &:active {
+    background: #ff3742;
+    transform: translateY(2rpx);
+    opacity: 0.9;
+  }
+}
+
+.btn-block {
+  width: 100%;
+  flex: 1;
 }
 </style>

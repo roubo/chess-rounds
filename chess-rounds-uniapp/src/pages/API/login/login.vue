@@ -118,7 +118,7 @@
 			...mapMutations(['login', 'setUniverifyLogin']),
 			...mapActions(['getPhoneNumber']),
 			Toast(data, duration = 1000) {
-				uni.showToast(Object.assign({}, data, {
+				// uni.showToast(Object.assign({}, data, {
 					duration
 				}))
 			},

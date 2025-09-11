@@ -40,11 +40,7 @@ export default {
     },
     
     testSystemToast() {
-      uni.showToast({
-        title: '这是系统原生Toast',
-        icon: 'success',
-        duration: 2000
-      })
+      // uni.showToast() - 已屏蔽
     }
   }
 }

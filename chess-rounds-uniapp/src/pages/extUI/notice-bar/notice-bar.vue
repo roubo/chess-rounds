@@ -42,10 +42,7 @@
 		created() {},
 		methods: {
 			getMore() {
-				uni.showToast({
-					title: '点击查看更多',
-					icon: 'none'
-				})
+				// uni.showToast() - 已屏蔽
 			}
 		}
 	}

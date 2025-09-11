@@ -312,9 +312,7 @@
 				console.log(this.baseFormData);
 				this.$refs[ref].validate().then(res => {
 					console.log('success', res);
-					uni.showToast({
-						title: `校验通过`
-					})
+					// uni.showToast() - 已屏蔽
 				}).catch(err => {
 					console.log('err', err);
 				})

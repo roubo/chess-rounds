@@ -44,11 +44,7 @@
 					}
 
 					setTimeout(() => {
-						uni.showToast({
-							title: "全屏视频" + (res.isEnded ? "成功" : "未") + "播放完毕",
-							duration: 10000,
-							position: 'bottom'
-						})
+						// uni.showToast() - 已屏蔽
 					}, 500)
 				});
 				_ad.onError((err) => {
@@ -57,10 +53,7 @@
 						this.loadError = true;
 					}
 					console.log('onError event', err)
-					uni.showToast({
-						title: err.errMsg,
-						position: 'bottom'
-					})
+					// uni.showToast() - 已屏蔽
 				});
 			},
 			showAd() {

@@ -67,7 +67,7 @@
 				this.status = e.detail.value
 			},
 			clickLoadMore(e) {
-				uni.showToast({
+				// uni.showToast({
 					icon: 'none',
 					title: "当前状态：" + e.detail.status
 				})

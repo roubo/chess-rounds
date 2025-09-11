@@ -85,10 +85,7 @@ export default {
 				
 				if (!savedToken) {
 					uni.hideLoading()
-					uni.showToast({
-						title: '登录信息保存失败，请重试',
-						icon: 'none'
-					})
+					// uni.showToast() - 已屏蔽
 					return
 				}
 				
@@ -109,10 +106,7 @@ export default {
 				console.log('是否为默认用户:', isDefaultUser)
 				
 				if (isDefaultUser) {
-					uni.showToast({
-						title: '请完善个人信息',
-						icon: 'none'
-					})
+					// uni.showToast() - 已屏蔽
 					
 					// 跳转到用户信息编辑页面，传递重定向参数
 					setTimeout(() => {
@@ -125,10 +119,7 @@ export default {
 						})
 					}, 1500)
 				} else {
-					uni.showToast({
-						title: '登录成功',
-						icon: 'success'
-					})
+					// uni.showToast() - 已屏蔽
 					
 					// 根据重定向参数跳转
 					setTimeout(() => {
@@ -147,19 +138,12 @@ export default {
 			} catch (error) {
 				uni.hideLoading()
 				console.error('微信登录失败:', error)
-				uni.showToast({
-					title: error.message || '登录失败，请重试',
-					icon: 'none',
-					duration: 2000
-				})
+				// uni.showToast() - 已屏蔽
 			}
 			// #endif
 			
 			// #ifndef MP-WEIXIN
-			uni.showToast({
-				title: '请在微信小程序中使用',
-				icon: 'none'
-			})
+			// uni.showToast() - 已屏蔽
 			// #endif
 		},
 		onGetUserInfo(e) {

@@ -71,7 +71,7 @@
 		onLoad() {},
 		methods: {
 			onClick(e) {
-				uni.showToast({
+				// uni.showToast({
 					title: `点击${e.content.text}`,
 					icon: 'none'
 				})

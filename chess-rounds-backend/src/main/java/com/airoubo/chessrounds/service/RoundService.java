@@ -78,8 +78,9 @@ public interface RoundService {
      * @param userId 操作用户ID（必须是创建者）
      * @param hasTable 是否有台板
      * @param tableUserId 台板用户ID（已废弃，系统会自动创建台板用户）
+     * @param baseAmount 倍率值
      */
-    void startRound(Long roundId, Long userId, Boolean hasTable, Long tableUserId);
+    void startRound(Long roundId, Long userId, Boolean hasTable, Long tableUserId, Double baseAmount);
     
     /**
      * 结束回合

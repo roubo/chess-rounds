@@ -1,13 +1,14 @@
 package com.airoubo.chessrounds.repository;
 
 import com.airoubo.chessrounds.entity.ParticipantRecord;
+import com.airoubo.chessrounds.enums.RoundStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
+import java.util.Optional;
 /**
  * 参与者记录数据访问层
  * 
@@ -40,6 +41,15 @@ public interface ParticipantRecordRepository extends JpaRepository<ParticipantRe
      * @return 参与者记录列表
      */
     List<ParticipantRecord> findByUserId(Long userId);
+    
+    /**
+     * 根据用户ID查询已结束回合的参与者记录
+     * 
+     * @param userId 用户ID
+     * @return 参与者记录列表
+     */
+    @Query("SELECT pr FROM ParticipantRecord pr JOIN FETCH pr.round r WHERE pr.userId = :userId AND r.status = :status")
+    List<ParticipantRecord> findByUserIdAndFinishedRounds(@Param("userId") Long userId, @Param("status") RoundStatus status);
     
     /**
      * 根据回合ID和用户ID查询参与者记录

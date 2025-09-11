@@ -136,9 +136,7 @@
 				// #endif
 			},
 			onClick(e) {
-				uni.showToast({
-					title: '列表被点击'
-				})
+				// uni.showToast() - 已屏蔽
 			},
 			change(e) {
 				console.log(e);

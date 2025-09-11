@@ -90,12 +90,13 @@ export const roundsApi = {
 		})
 	},
 
-	startRound(roundId, hasTable, tableUserId) {
+	startRound(roundId, hasTable, tableUserId, baseAmount) {
     return request(`/rounds/${roundId}/start`, {
       method: 'POST',
       data: {
         hasTable: hasTable,
-        tableUserId: tableUserId
+        tableUserId: tableUserId,
+        base_amount: baseAmount
       }
     })
   },
@@ -110,6 +111,23 @@ export const roundsApi = {
 	// 获取我的回合
 	async getMyRounds() {
 		return request('/rounds/my')
+	},
+
+	// 获取我的已结束回合
+	async getMyFinishedRounds() {
+		// 由于后端暂不支持status参数过滤，先获取所有回合再在前端过滤
+		const response = await request('/rounds/my')
+		if (response && response.content) {
+			// 过滤出已结束的回合，并按创建时间倒序排列（最新的在前面）
+			const finishedRounds = response.content
+				.filter(round => round.status === 'finished')
+				.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+			return {
+				...response,
+				content: finishedRounds
+			}
+		}
+		return response
 	},
 
 	// 获取回合参与者
@@ -177,15 +195,23 @@ export const userApi = {
 			data: userData,
 			requireUserId: false
 		})
+	},
+
+	// 获取用户统计数据
+	getUserStatistics() {
+		const userId = getUserId()
+		if (!userId) {
+			return Promise.reject(new Error('用户未登录'))
+		}
+		return request(`/users/${userId}/statistics`, {
+			method: 'GET',
+			requireUserId: false
+		})
 	}
 }
 
 // 错误处理工具
 export const handleApiError = (error) => {
 	console.error('API Error:', error)
-	uni.showToast({
-		title: error.message || '网络请求失败',
-		icon: 'none',
-		duration: 2000
-	})
+	// // uni.showToast() - 已屏蔽
 }

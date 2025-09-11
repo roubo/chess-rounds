@@ -323,11 +323,7 @@ export default {
 		 */
 		createBLEConnection() {
 			let deviceId = this.equipment[0].deviceId;
-			uni.showToast({
-				title: '连接蓝牙...',
-				icon: 'loading',
-				duration: 99999
-			});
+			// uni.showToast() - 已屏蔽;
 			uni.createBLEConnection({
 				// 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
 				deviceId,
@@ -337,11 +333,7 @@ export default {
 					// 连接设备后断开搜索 并且不能搜索设备
 					this.stopBluetoothDevicesDiscovery(true);
 					uni.hideToast();
-					uni.showToast({
-						title: '连接成功',
-						icon: 'success',
-						duration: 2000
-					});
+					// uni.showToast() - 已屏蔽;
 					this.$set(this.disabled, 3, true);
 					this.$set(this.disabled, 4, true);
 					this.$set(this.disabled, 5, false);

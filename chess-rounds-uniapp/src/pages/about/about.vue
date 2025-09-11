@@ -87,15 +87,9 @@
 					itemList: ['保存图片到相册'],
 					success: () => {
 						plus.gallery.save('https://img.cdn.aliyun.dcloud.net.cn/guide/uniapp/app_download.png', function() {
-							uni.showToast({
-								title: '保存成功',
-								icon: 'none'
-							});
+							// uni.showToast() - 已屏蔽;
 						}, function() {
-							uni.showToast({
-								title: '保存失败，请重试！',
-								icon: 'none'
-							});
+							// uni.showToast() - 已屏蔽;
 						});
 					}
 				});

@@ -77,9 +77,7 @@
 						this.doGetLocation();
 					},
 					fail: () => {
-						uni.showToast({
-							title: "未授权获取地理位置权限"
-						})
+						// uni.showToast() - 已屏蔽
 					}
 				})
 				// #endif
@@ -101,13 +99,9 @@
                         // #endif
                         // #ifndef MP-BAIDU
                         if (err.errMsg.indexOf("auth deny") >= 0) {
-                            uni.showToast({
-                                title: "访问位置被拒绝"
-                            })
+                            // uni.showToast() - 已屏蔽
                         } else {
-                            uni.showToast({
-                                title: err.errMsg
-                            })
+                            // uni.showToast() - 已屏蔽
                         }
                         // #endif
                     }

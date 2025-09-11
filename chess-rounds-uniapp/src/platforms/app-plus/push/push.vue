@@ -49,10 +49,7 @@
 				plus.push.addEventListener('receive',(msg)=>{
                     this.tranMsg = JSON.stringify(msg)
                 })
-                uni.showToast({
-                    title: '开始监听透传数据',
-                    icon: 'success'
-                })
+                // uni.showToast() - 已屏蔽
 			},
 			requireTranMsg() { //请求‘透传数据’推送消息
 				var inf = plus.push.getClientInfo();
