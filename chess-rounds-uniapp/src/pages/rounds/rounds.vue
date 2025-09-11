@@ -39,8 +39,8 @@ export default {
 	// 分享给好友
 	onShareAppMessage() {
 		return {
-			title: '象棋回合 - 一起来下棋吧！',
-			desc: '发现精彩的象棋回合，与棋友一起切磋技艺',
+			title: '记回合，更记友情',
+			desc: '与朋友一起来记录吧',
 			path: '/pages/rounds/rounds',
 			imageUrl: '/static/icons/rounds.svg'
 		}
@@ -48,8 +48,8 @@ export default {
 	// 分享到朋友圈
 	onShareTimeline() {
 		return {
-			title: '象棋回合 - 发现精彩对局',
-			desc: '与棋友一起切磋技艺，提升棋艺水平',
+			title: '记回合，更记友情',
+			desc: '与朋友一起来记录吧',
 			path: '/pages/rounds/rounds',
 			imageUrl: '/static/icons/rounds.svg'
 		}

@@ -25,8 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 用户服务实现类
@@ -269,19 +271,34 @@ public class UserServiceImpl implements UserService {
                 return new UserStatistics(0L, 0L, 0L, 0L, 0L, 0L);
             }
             
-            // 计算统计数据
-            long totalRounds = participantRecords.size();
-            long winRounds = participantRecords.stream()
-                    .mapToLong(record -> Boolean.TRUE.equals(record.getIsWinner()) ? 1L : 0L)
-                    .sum();
+            // 计算统计数据 - 统计不同的回合数量而不是局数
+            long totalRounds = participantRecords.stream()
+                    .map(record -> record.getRound().getId())
+                    .distinct()
+                    .count();
+            // 按回合分组统计胜负情况
+            Map<Long, List<ParticipantRecord>> recordsByRound = participantRecords.stream()
+                    .collect(Collectors.groupingBy(record -> record.getRound().getId()));
             
-            // 计算平场数（金额变化为0的记录）
-            long drawRounds = participantRecords.stream()
-                    .mapToLong(record -> record.getAmountChange().compareTo(BigDecimal.ZERO) == 0 ? 1L : 0L)
-                    .sum();
+            long winRounds = 0;
+            long drawRounds = 0;
+            long loseRounds = 0;
             
-            // 计算负场数（总回合数 - 胜场数 - 平场数）
-            long loseRounds = totalRounds - winRounds - drawRounds;
+            for (List<ParticipantRecord> roundRecords : recordsByRound.values()) {
+                // 计算该回合的总金额变化
+                BigDecimal totalAmountChangeInRound = roundRecords.stream()
+                        .map(ParticipantRecord::getAmountChange)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+                // 判断该回合的胜负情况
+                if (totalAmountChangeInRound.compareTo(BigDecimal.ZERO) > 0) {
+                    winRounds++;
+                } else if (totalAmountChangeInRound.compareTo(BigDecimal.ZERO) == 0) {
+                    drawRounds++;
+                } else {
+                    loseRounds++;
+                }
+            }
             
             // 计算总金额变化（正数为盈利，负数为亏损），应用回合倍率
             BigDecimal totalAmountChange = participantRecords.stream()

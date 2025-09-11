@@ -161,7 +161,7 @@ public class WechatApiServiceImpl implements WechatApiService {
             params.put("width", 430);  // 二维码宽度，单位px，最大1280px，最小280px
             params.put("auto_color", false);  // 自动配置线条颜色，如果颜色依然是黑色，则说明不建议配置主色调
             params.put("check_path", false);  // 检查page是否存在，为true时page必须是已经发布的小程序存在的页面
-            params.put("env_version", "trial");  // 要打开的小程序版本。正式版为"release"，体验版为"trial"，开发版为"develop"
+            params.put("env_version", "release");  // 要打开的小程序版本。正式版为"release"，体验版为"trial"，开发版为"develop"
             
             // 设置线条颜色为深蓝色，提升视觉效果
             Map<String, Object> lineColor = new HashMap<>();
