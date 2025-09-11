@@ -249,6 +249,48 @@ public class RoundController {
     }
     
     /**
+     * 加入旁观
+     * 
+     * @param roundId 回合ID
+     * @param userId 用户ID
+     * @return 响应结果
+     */
+    @PostMapping("/{roundId}/spectate")
+    public ResponseEntity<Void> joinSpectator(
+            @PathVariable Long roundId,
+            @RequestHeader("user-id") Long userId) {
+        roundService.joinSpectator(roundId, userId);
+        return ResponseEntity.ok().build();
+    }
+    
+    /**
+     * 退出旁观
+     * 
+     * @param roundId 回合ID
+     * @param userId 用户ID
+     * @return 响应结果
+     */
+    @DeleteMapping("/{roundId}/spectate")
+    public ResponseEntity<Void> leaveSpectator(
+            @PathVariable Long roundId,
+            @RequestHeader("user-id") Long userId) {
+        roundService.leaveSpectator(roundId, userId);
+        return ResponseEntity.ok().build();
+    }
+    
+    /**
+     * 获取旁观者列表
+     * 
+     * @param roundId 回合ID
+     * @return 旁观者列表
+     */
+    @GetMapping("/{roundId}/spectators")
+    public ResponseEntity<List<ParticipantInfoResponse>> getSpectators(@PathVariable Long roundId) {
+        List<ParticipantInfoResponse> spectators = roundService.getSpectators(roundId);
+        return ResponseEntity.ok(spectators);
+    }
+    
+    /**
      * 生成回合小程序码
      * 
      * @param roundId 回合ID

@@ -20,6 +20,11 @@
       :refresher-triggered="refreshing"
       @refresherrefresh="onRefresh"
     >
+      <!-- 旁观模式提示 -->
+      <view v-if="isSpectateMode" class="spectate-mode-tip">
+        <text class="spectate-text">👁️ 旁观模式 - 您正在观看此回合</text>
+      </view>
+      
       <!-- 固定的回合累计区域 -->
       <view class="fixed-header">
         <view class="amounts-section">
@@ -28,7 +33,17 @@
               <text class="section-title">回合累计</text>
               <text v-if="roundDetail.multiplier" class="multiplier-hint">倍率x{{ roundDetail.multiplier }}</text>
             </view>
-            <text class="section-subtitle">共{{ Array.isArray(gameRecords) ? gameRecords.length : 0 }}局</text>
+            <view class="header-actions">
+              <!-- 旁观按钮 - 仅在回合进行中且非旁观模式时显示 -->
+              <view 
+                v-if="canShowSpectateShare" 
+                class="spectate-share-btn" 
+                @click="shareSpectate"
+              >
+                <text>观</text>
+              </view>
+              <text class="section-subtitle">共{{ Array.isArray(gameRecords) ? gameRecords.length : 0 }}局</text>
+            </view>
           </view>
           
           <view class="amounts-list">
@@ -56,6 +71,23 @@
                 <text class="participant-amount" :class="{ 'positive': participant.totalAmount > 0, 'negative': participant.totalAmount < 0 }">
                   {{ formatAmount(participant.totalAmount) }}
                 </text>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 旁观者列表 -->
+          <view v-if="spectators && spectators.length > 0" class="spectators-section">
+            <view class="spectators-header">
+              <text class="spectators-title">旁观者 ({{ spectators.length }})</text>
+            </view>
+            <view class="spectators-list">
+              <view 
+                v-for="spectator in spectators" 
+                :key="spectator.id"
+                class="spectator-item"
+              >
+                <image class="spectator-avatar" :src="getSpectatorAvatarUrl(spectator)" mode="aspectFill" />
+                <text class="spectator-name">{{ (spectator.user_info && spectator.user_info.nickname) || spectator.name || '旁观者' }}</text>
               </view>
             </view>
           </view>
@@ -103,7 +135,7 @@
           <view class="section-header">
             <text class="section-title">每局记录</text>
             <view class="header-actions">
-              <view v-if="canAddRecord" class="add-button" @click="showAddRecordModal">
+              <view v-if="canAddRecord && !isSpectateMode" class="add-button" @click="showAddRecordModal">
                 <text class="add-icon">+</text>
               </view>
             </view>
@@ -257,7 +289,7 @@
     </uni-popup>
 
     <!-- 底部操作按钮 -->
-    <view v-if="canEndRound && !isAddRecordModalVisible" class="action-buttons">
+    <view v-if="canEndRound && !isAddRecordModalVisible && !isSpectateMode" class="action-buttons">
       <button 
         class="btn-danger btn-block" 
         @click="showEndRoundConfirm"
@@ -281,12 +313,15 @@ export default {
       roundId: null,
       roundDetail: null,
       participants: [],
+      spectators: [], // 旁观者列表
       gameRecords: [],
       loading: true,
       refreshing: false,
       currentUserId: null, // 从用户状态获取
       refreshTimer: null,
       autoJoin: false, // 是否自动加入回合
+      isSpectateMode: false, // 是否为旁观模式
+      isSpectateShare: false, // 是否为旁观分享模式
       
       // 添加记录相关
       newRecord: {
@@ -369,6 +404,20 @@ export default {
       const isInProgress = (this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress'
       const isFinished = (this.roundDetail && this.roundDetail.status) === 'finished'
       return isInProgress && !isFinished && (this.isCreator || this.isParticipant)
+    },
+    
+    // 是否显示旁观分享按钮
+    canShowSpectateShare() {
+      // 仅在回合进行中且非旁观模式时显示
+      const isInProgress = (this.roundDetail && this.roundDetail.status) === 'playing' || (this.roundDetail && this.roundDetail.status) === 'in_progress'
+      const result = isInProgress && !this.isSpectateMode
+      console.log('canShowSpectateShare:', {
+        roundDetailStatus: this.roundDetail && this.roundDetail.status,
+        isInProgress,
+        isSpectateMode: this.isSpectateMode,
+        result
+      })
+      return result
     },
     
 
@@ -484,23 +533,44 @@ export default {
     }
   },
   
-  onLoad(options) {
+  async onLoad(options) {
     // 支持从回合列表跳转和扫码进入
     this.roundId = options.id || options.roundId || options.scene
     
+    // 检查是否为旁观模式
+    this.isSpectateMode = options.spectate === 'true'
+    
     // 处理小程序码参数
     if (options.scene) {
-      // 解码小程序码参数，格式可能是 roundId=123
+      // 解码小程序码参数，格式可能是 roundId=123&spectate=true
       const sceneParams = decodeURIComponent(options.scene)
-      const match = sceneParams.match(/roundId=(\d+)/)
-      if (match) {
-        this.roundId = match[1]
+      const roundIdMatch = sceneParams.match(/roundId=(\d+)/)
+      const spectateMatch = sceneParams.match(/spectate=true/)
+      if (roundIdMatch) {
+        this.roundId = roundIdMatch[1]
       }
-      // 扫码进入时自动设置为需要加入回合
-      this.autoJoin = true
+      if (spectateMatch) {
+        this.isSpectateMode = true
+      }
+      // 扫码进入时自动设置为需要加入回合（旁观模式除外）
+      this.autoJoin = !this.isSpectateMode
     } else {
-      // 检查是否需要自动加入回合
-      this.autoJoin = options.autoJoin === 'true'
+      // 检查是否需要自动加入回合（旁观模式除外）
+      this.autoJoin = options.autoJoin === 'true' && !this.isSpectateMode
+    }
+    
+    // 如果是旁观模式，先加入旁观者
+    if (this.isSpectateMode && this.roundId) {
+      try {
+        await this.joinSpectator()
+      } catch (error) {
+        console.error('加入旁观者失败:', error)
+        uni.showToast({
+          title: '加入旁观失败',
+          icon: 'none'
+        })
+        return
+      }
     }
     
     if (this.roundId) {
@@ -591,11 +661,12 @@ export default {
       try {
         this.loading = true
         
-        // 并行请求回合详情、参与者和游戏记录
-        const [roundRes, participantsRes, recordsRes] = await Promise.all([
+        // 并行请求回合详情、参与者、游戏记录和旁观者列表
+        const [roundRes, participantsRes, recordsRes, spectatorsRes] = await Promise.all([
           roundsApi.getRoundDetail(this.roundId),
           roundsApi.getRoundParticipants(this.roundId),
-          roundsApi.getGameRecords(this.roundId)
+          roundsApi.getGameRecords(this.roundId),
+          roundsApi.getSpectators(this.roundId).catch(() => null) // 旁观者列表获取失败不影响主要功能
         ])
         
         // 适配后端响应格式：可能直接返回数据，也可能包装在 {code, data} 中
@@ -619,6 +690,11 @@ export default {
           const rawRecords = recordsRes || []
           // 转换API数据格式为前端期望的格式
           this.gameRecords = this.transformRecordsData(rawRecords)
+        }
+        
+        // 处理旁观者数据
+        if (spectatorsRes) {
+          this.spectators = (spectatorsRes.code === 200 ? spectatorsRes.data : spectatorsRes) || []
         }
         
         // 如果没有回合详情但有参与者数据，创建一个基本的回合详情对象
@@ -693,6 +769,11 @@ export default {
      */
     async handleAutoJoinRound() {
       try {
+        // 旁观模式下不自动加入回合
+        if (this.isSpectateMode) {
+          return
+        }
+        
         // 检查用户是否已经参与了这个回合
         if (this.isCurrentUserParticipant) {
           // uni.showToast() - 已屏蔽
@@ -1056,6 +1137,24 @@ export default {
       return avatarUrl || '/static/images/default-avatar.png'
     },
     
+    // 获取旁观者头像URL
+    getSpectatorAvatarUrl(spectator) {
+      if (!spectator) {
+        return '/static/images/default-avatar.png'
+      }
+      
+      // 适配新的API格式：用户信息在user_info中
+      const avatarUrl = (spectator.user_info && spectator.user_info.avatar_url) || spectator.avatar
+      
+      // 处理相对路径的头像URL
+      if (avatarUrl && avatarUrl.startsWith('/static/')) {
+        const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
+        return baseURL + avatarUrl
+      }
+      
+      return avatarUrl || '/static/images/default-avatar.png'
+    },
+    
     // 显示收盘确认弹框
     showEndRoundConfirm() {
       this.$refs.endRoundPopup.open()
@@ -1118,9 +1217,158 @@ export default {
       const diffMinutes = Math.round(diffMs / (1000 * 60)) // 转换为分钟并四舍五入
       
       return Math.max(0, diffMinutes) // 确保不返回负数
-    }
+    },
+    
+    /**
+     * 加入旁观者
+     */
+    async joinSpectator() {
+      try {
+        console.log('加入旁观者:', this.roundId)
+        await roundsApi.joinSpectator(this.roundId)
+        
+        uni.showToast({
+          title: '已加入旁观',
+          icon: 'success'
+        })
+        
+        // 刷新旁观者列表
+         await this.refreshSpectators()
+        
+      } catch (error) {
+        console.error('加入旁观者失败:', error)
+        uni.showToast({
+          title: '加入旁观失败',
+          icon: 'error'
+        })
+        throw error
+      }
+    },
+    
+    /**
+     * 分享旁观
+     */
+    shareSpectate() {
+      console.log('shareSpectate clicked')
+      
+      // #ifdef MP-WEIXIN
+      // 微信小程序环境下显示分享选项
+      uni.showActionSheet({
+        itemList: ['邀请好友旁观', '复制链接'],
+        success: (res) => {
+          if (res.tapIndex === 0) {
+            // 设置分享标记，然后提示用户使用右上角分享
+            this.isSpectateShare = true
+            uni.showModal({
+              title: '邀请好友旁观',
+              content: '请点击右上角的分享按钮，邀请好友旁观此回合',
+              showCancel: false,
+              confirmText: '知道了'
+            })
+          } else if (res.tapIndex === 1) {
+            this.copySpectateLink()
+          }
+        }
+      })
+      // #endif
+      
+      // #ifndef MP-WEIXIN
+      uni.showActionSheet({
+        itemList: ['复制链接'],
+        success: (res) => {
+          if (res.tapIndex === 0) {
+            this.copySpectateLink()
+          }
+        }
+      })
+      // #endif
+    },
+    
+    /**
+     * 复制旁观链接
+     */
+    copySpectateLink() {
+      const spectateUrl = `/pages/round-detail/round-detail?id=${this.roundId}&spectate=true`
+      uni.setClipboardData({
+        data: spectateUrl,
+        success: () => {
+          uni.showToast({
+            title: '链接已复制',
+            icon: 'success'
+          })
+        }
+      })
+    },
+    
 
+      
+      /**
+       * 刷新旁观者列表
+       */
+      async refreshSpectators() {
+        try {
+          const spectatorsRes = await roundsApi.getSpectators(this.roundId)
+          
+          if (spectatorsRes) {
+            this.spectators = (spectatorsRes.code === 200 ? spectatorsRes.data : spectatorsRes) || []
+          }
+        } catch (error) {
+          console.error('刷新旁观者列表失败:', error)
+          // 旁观者列表获取失败不影响主要功能，只记录错误
+        }
+      }
+
+  },
+  
+  // #ifdef MP-WEIXIN
+  // 微信小程序分享到聊天
+  onShareAppMessage() {
+    // 如果是通过旁观分享按钮触发的分享
+    if (this.isSpectateShare) {
+      this.isSpectateShare = false // 重置标记
+      return {
+        title: `观看${this.roundDetail.name || '回合'}的对局`,
+        path: `/pages/round-detail/round-detail?id=${this.roundId}&spectate=true`,
+        imageUrl: ''
+      }
+    }
+    
+    if (this.roundDetail && this.roundDetail.status === 'playing' && !this.isSpectateMode) {
+      // 进行中的回合分享旁观链接
+      return {
+        title: `观看${this.roundDetail.name || '回合'}的对局`,
+        path: `/pages/round-detail/round-detail?id=${this.roundId}&spectate=true`,
+        imageUrl: ''
+      }
+    } else {
+      // 其他状态的回合分享普通链接
+      return {
+        title: `加入${this.roundDetail && this.roundDetail.name || '回合'}的对局`,
+        path: `/pages/round-detail/round-detail?id=${this.roundId}`,
+        imageUrl: ''
+      }
+    }
+  },
+  
+  // 微信小程序分享到朋友圈
+  onShareTimeline() {
+    if (this.roundDetail && this.roundDetail.status === 'playing' && !this.isSpectateMode) {
+      // 进行中的回合分享旁观链接
+      return {
+        title: `观看${this.roundDetail.name || '回合'}的精彩对局`,
+        query: `id=${this.roundId}&spectate=true`,
+        imageUrl: ''
+      }
+    } else {
+      // 其他状态的回合分享普通链接
+      return {
+        title: `快来加入${this.roundDetail && this.roundDetail.name || '回合'}的对局`,
+        query: `id=${this.roundId}`,
+        imageUrl: ''
+      }
+    }
   }
+  // #endif
 }
 </script>
 
@@ -1985,5 +2233,103 @@ export default {
 .btn-block {
   width: 100%;
   flex: 1;
+}
+
+/* 旁观按钮样式 */
+.spectate-share-btn {
+  width: 60rpx;
+  height: 60rpx;
+  background-color: #007aff;
+  border-radius: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin-right: 20rpx;
+}
+
+.spectate-share-btn text {
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+  line-height: 1;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spectate-share-btn:active {
+  opacity: 0.8;
+  transform: scale(0.95);
+}
+
+/* 旁观者列表样式 */
+.spectators-section {
+  margin-top: 32rpx;
+  padding-top: 32rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.spectators-header {
+  margin-bottom: 24rpx;
+}
+
+.spectators-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #666;
+}
+
+.spectators-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.spectator-item {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 24rpx;
+  padding: 12rpx 20rpx;
+  min-width: 0;
+}
+
+.spectator-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.spectator-name {
+  font-size: 24rpx;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120rpx;
+}
+
+// 旁观模式提示样式
+.spectate-mode-tip {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx 30rpx;
+  margin: 0;
+  
+  .spectate-text {
+    color: white;
+    font-size: 28rpx;
+    font-weight: 500;
+    text-align: center;
+    display: block;
+    text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
+  }
 }
 </style>

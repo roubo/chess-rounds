@@ -14,7 +14,7 @@ import com.airoubo.chessrounds.repository.ParticipantRepository;
 import com.airoubo.chessrounds.service.RoundService;
 import com.airoubo.chessrounds.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -88,7 +88,6 @@ public class RoundServiceImpl implements RoundService {
     }
     
     @Override
-    @CacheEvict(value = "userStatistics", key = "#userId")
     public ParticipantInfoResponse joinRound(Long roundId, Long userId) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new RuntimeException("回合不存在"));
@@ -229,7 +228,6 @@ public class RoundServiceImpl implements RoundService {
     }
     
     @Override
-    @CacheEvict(value = "userStatistics", allEntries = true)
     public void endRound(Long roundId, Long userId) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new RuntimeException("回合不存在"));
@@ -293,7 +291,15 @@ public class RoundServiceImpl implements RoundService {
     @Override
     @Transactional(readOnly = true)
     public List<ParticipantInfoResponse> getRoundParticipants(Long roundId) {
-        List<Participant> participants = participantRepository.findByRoundIdAndIsActive(roundId, true);
+        // 获取PLAYER和TABLE角色的参与者，不包含旁观者
+        List<Participant> players = participantRepository.findByRoundIdAndRoleAndIsActive(roundId, ParticipantRole.PLAYER, true);
+        List<Participant> tables = participantRepository.findByRoundIdAndRoleAndIsActive(roundId, ParticipantRole.TABLE, true);
+        
+        // 合并两个列表
+        List<Participant> participants = new ArrayList<>();
+        participants.addAll(players);
+        participants.addAll(tables);
+        
         List<ParticipantInfoResponse> responses = new ArrayList<>();
         
         for (Participant participant : participants) {
@@ -541,7 +547,11 @@ public class RoundServiceImpl implements RoundService {
         // 设置参与者列表
         List<ParticipantInfoResponse> participants = getRoundParticipants(round.getId());
         response.setParticipants(participants);
-        
+
+        // 设置旁观者列表
+        List<ParticipantInfoResponse> spectators = getSpectators(round.getId());
+        response.setSpectators(spectators);
+
         return response;
     }
     
@@ -562,6 +572,77 @@ public class RoundServiceImpl implements RoundService {
             return ((BigDecimal) result).doubleValue();
         }
         return 0.0;
+    }
+    
+    @Override
+    public void joinSpectator(Long roundId, Long userId) {
+        // 检查回合是否存在
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new RuntimeException("回合不存在"));
+        
+        // 检查用户是否已经是参与者
+        if (participantRepository.existsByRoundIdAndUserId(roundId, userId)) {
+            throw new RuntimeException("用户已经是参与者，不能加入旁观");
+        }
+        
+        // 检查用户是否已经是旁观者
+        Optional<Participant> existingSpectator = participantRepository
+                .findByRoundIdAndUserIdAndRole(roundId, userId, ParticipantRole.SPECTATOR);
+        if (existingSpectator.isPresent() && existingSpectator.get().getIsActive()) {
+            throw new RuntimeException("用户已经是旁观者");
+        }
+        
+        // 创建旁观者记录
+        Participant spectator = new Participant();
+        spectator.setRoundId(roundId);
+        spectator.setUserId(userId);
+        spectator.setRole(ParticipantRole.SPECTATOR);
+        spectator.setJoinedAt(LocalDateTime.now());
+        spectator.setIsActive(true);
+        
+        participantRepository.save(spectator);
+    }
+    
+    @Override
+    public void leaveSpectator(Long roundId, Long userId) {
+        // 查找旁观者记录
+        Optional<Participant> spectator = participantRepository
+                .findByRoundIdAndUserIdAndRole(roundId, userId, ParticipantRole.SPECTATOR);
+        
+        if (!spectator.isPresent() || !spectator.get().getIsActive()) {
+            throw new RuntimeException("用户不是该回合的旁观者");
+        }
+        
+        // 设置为非活跃状态
+        Participant spectatorEntity = spectator.get();
+        spectatorEntity.setIsActive(false);
+        participantRepository.save(spectatorEntity);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ParticipantInfoResponse> getSpectators(Long roundId) {
+        // 获取活跃的旁观者列表
+        List<Participant> spectators = participantRepository
+                .findByRoundIdAndRoleAndIsActive(roundId, ParticipantRole.SPECTATOR, true);
+        
+        List<ParticipantInfoResponse> responses = new ArrayList<>();
+        for (Participant spectator : spectators) {
+            ParticipantInfoResponse response = new ParticipantInfoResponse();
+            response.setParticipantId(spectator.getId());
+            response.setRole(spectator.getRole().name());
+            response.setJoinedAt(spectator.getJoinedAt());
+            
+            // 获取用户信息
+            Optional<UserInfoResponse> userInfo = userService.getUserById(spectator.getUserId());
+            if (userInfo.isPresent()) {
+                response.setUserInfo(userInfo.get());
+            }
+            
+            responses.add(response);
+        }
+        
+        return responses;
     }
     
     /**

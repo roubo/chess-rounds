@@ -45,6 +45,16 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     Optional<Participant> findByRoundIdAndUserId(Long roundId, Long userId);
     
     /**
+     * 根据回合ID、用户ID和角色查询参与者
+     * 
+     * @param roundId 回合ID
+     * @param userId 用户ID
+     * @param role 角色
+     * @return 参与者信息
+     */
+    Optional<Participant> findByRoundIdAndUserIdAndRole(Long roundId, Long userId, ParticipantRole role);
+    
+    /**
      * 根据回合ID和角色查询参与者
      * 
      * @param roundId 回合ID

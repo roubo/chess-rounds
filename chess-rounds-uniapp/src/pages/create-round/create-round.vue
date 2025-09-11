@@ -180,9 +180,8 @@ export default {
 		},
 		// 是否可以开始回合
 		canStartRound() {
-			// 支持两人及以上参与者开始回合
-			const minPlayers = 2
-			return this.roundParticipants.length >= minPlayers
+			// 不受人数限制，只要有创建者就可以开始
+			return true
 		}
 	},
 	async onLoad(options) {
@@ -425,7 +424,7 @@ export default {
 			// 显示确认弹窗
 			uni.showModal({
 				title: '确认开始回合',
-				content: `当前倍率：${this.formData.gameMultiplier}倍\n\n注意：开始回合后将不能再增加参与者，请确认所有玩家都已加入。`,
+				content: `当前倍率：${this.formData.gameMultiplier}倍\n\n注意：开始回合后将不能再增加参与者。`,
 				confirmText: '开始回合',
 				cancelText: '取消',
 				success: async (res) => {

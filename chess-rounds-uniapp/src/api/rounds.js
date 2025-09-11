@@ -90,6 +90,27 @@ export const roundsApi = {
 		})
 	},
 
+	// 加入旁观者
+	joinSpectator(roundId) {
+		return request(`/rounds/${roundId}/spectate`, {
+			method: 'POST'
+		})
+	},
+
+	// 退出旁观
+	leaveSpectator(roundId) {
+		return request(`/rounds/${roundId}/spectate`, {
+			method: 'DELETE'
+		})
+	},
+
+	// 获取旁观者列表
+	getSpectators(roundId) {
+		return request(`/rounds/${roundId}/spectators`, {
+			requireUserId: false
+		})
+	},
+
 	startRound(roundId, hasTable, tableUserId, baseAmount) {
     return request(`/rounds/${roundId}/start`, {
       method: 'POST',

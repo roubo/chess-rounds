@@ -1,5 +1,5 @@
 <template>
-	<view class="round-card" @click="goToDetail">
+	<view class="round-card" :class="{ 'spectate-round': isSpectateRound }" @click="goToDetail">
 		<!-- 回合状态和时间 -->
 		<view class="card-header">
 			<view class="create-time-left">
@@ -32,8 +32,25 @@
 
 		</view>
 		
+		<!-- 旁观者列表 -->
+		<view v-if="displaySpectators && displaySpectators.length > 0" class="spectators-section">
+			<view class="spectators-header">
+				<text class="spectators-title">旁观者 ({{ displaySpectators.length }})</text>
+			</view>
+			<view class="spectators-list">
+				<view 
+					v-for="spectator in displaySpectators" 
+					:key="spectator.id"
+					class="spectator-item"
+				>
+					<image class="spectator-avatar" :src="getSpectatorAvatarUrl(spectator)" mode="aspectFill" />
+					<text class="spectator-name">{{ getSpectatorName(spectator) }}</text>
+				</view>
+			</view>
+		</view>
+		
 		<!-- 操作按钮 -->
-		<view class="card-actions" v-if="canJoin || canSpectate">
+		<view class="card-actions" v-if="!isSpectateRound && (canJoin || canSpectate)">
 			<button class="btn-primary btn-sm" v-if="canJoin" @click.stop="joinRound">
 				加入
 			</button>
@@ -54,6 +71,10 @@ export default {
 		round: {
 			type: Object,
 			required: true
+		},
+		isSpectateRound: {
+			type: Boolean,
+			default: false
 		}
 	},
 	
@@ -124,6 +145,26 @@ export default {
 				console.log('avatarUrl字段:', mapped.avatarUrl)
 				return mapped
 					})
+		},
+		displaySpectators() {
+			if (!this.round.spectators) return []
+			return this.round.spectators.map(spectator => {
+				const mapped = {
+					...spectator,
+					// 映射用户信息字段
+					avatar: spectator.user_info?.avatar_url || spectator.avatar,
+					avatarUrl: spectator.user_info?.avatar_url || spectator.avatarUrl,
+					nickname: spectator.user_info?.nickname || spectator.nickname,
+					name: spectator.user_info?.nickname || spectator.name
+				}
+				
+				// 处理头像URL拼接
+				if (mapped.avatarUrl && !mapped.avatarUrl.startsWith('http')) {
+					mapped.avatarUrl = config.staticBaseURL + mapped.avatarUrl
+				}
+				
+				return mapped
+			})
 		}
 	},
 	methods: {
@@ -297,6 +338,21 @@ export default {
 			uni.navigateTo({
 				url: `/pages/round-detail/round-detail?id=${this.round.id}&mode=spectate`
 			})
+		},
+		
+		getSpectatorAvatarUrl(spectator) {
+			const avatarUrl = spectator.user_info?.avatar_url || spectator.avatarUrl || spectator.avatar
+			if (!avatarUrl) {
+				return '/static/images/default-avatar.png'
+			}
+			if (avatarUrl.startsWith('http')) {
+				return avatarUrl
+			}
+			return config.staticBaseURL + avatarUrl
+		},
+		
+		getSpectatorName(spectator) {
+			return (spectator.user_info && spectator.user_info.nickname) || spectator.nickname || spectator.name || '旁观者'
 		},
 		
 		formatAmount(amount) {
@@ -503,11 +559,66 @@ export default {
 	}
 }
 
+.spectators-section {
+	margin-top: 24rpx;
+	padding-top: 24rpx;
+	border-top: 1rpx solid #f0f0f0;
+}
+
+.spectators-header {
+	margin-bottom: 16rpx;
+}
+
+.spectators-title {
+	font-size: 24rpx;
+	font-weight: 600;
+	color: #666;
+}
+
+.spectators-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12rpx;
+}
+
+.spectator-item {
+	display: flex;
+	align-items: center;
+	background: #f8f9fa;
+	border-radius: 20rpx;
+	padding: 8rpx 16rpx;
+	min-width: 0;
+}
+
+.spectator-avatar {
+	width: 32rpx;
+	height: 32rpx;
+	border-radius: 50%;
+	margin-right: 8rpx;
+	flex-shrink: 0;
+}
+
+.spectator-name {
+	font-size: 22rpx;
+	color: #666;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100rpx;
+}
+
 .card-actions {
 	display: flex;
 	justify-content: flex-end;
 	gap: 12rpx;
 	padding-top: 16rpx;
 	border-top: 1rpx solid #e9ecef;
+}
+
+// 旁观回合不显示分割线和按钮
+.round-card.spectate-round .card-actions {
+	border-top: none;
+	padding-top: 0;
+	display: none;
 }
 </style>

@@ -115,6 +115,30 @@ public interface RoundService {
     List<ParticipantInfoResponse> getRoundParticipants(Long roundId);
     
     /**
+     * 加入旁观
+     * 
+     * @param roundId 回合ID
+     * @param userId 用户ID
+     */
+    void joinSpectator(Long roundId, Long userId);
+    
+    /**
+     * 退出旁观
+     * 
+     * @param roundId 回合ID
+     * @param userId 用户ID
+     */
+    void leaveSpectator(Long roundId, Long userId);
+    
+    /**
+     * 获取旁观者列表
+     * 
+     * @param roundId 回合ID
+     * @return 旁观者列表
+     */
+    List<ParticipantInfoResponse> getSpectators(Long roundId);
+    
+    /**
      * 获取用户参与的回合列表
      * 
      * @param userId 用户ID

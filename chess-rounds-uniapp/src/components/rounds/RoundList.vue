@@ -164,6 +164,7 @@ export default {
 							creator: round.creator,
 							tableUser: round.table_user,
 							participants: round.participants || [],
+							spectators: round.spectators || [],
 							canJoin: round.can_join,
 							recordCount: 0, // 将在后续异步获取
 							// 用户角色标识

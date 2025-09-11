@@ -137,7 +137,13 @@ public class RoundInfoResponse implements Serializable {
      */
     @JsonProperty("participants")
     private List<ParticipantInfoResponse> participants;
-    
+
+    /**
+     * 旁观者列表
+     */
+    @JsonProperty("spectators")
+    private List<ParticipantInfoResponse> spectators;
+
     /**
      * 是否可以加入
      */
@@ -313,7 +319,15 @@ public class RoundInfoResponse implements Serializable {
     public void setParticipants(List<ParticipantInfoResponse> participants) {
         this.participants = participants;
     }
-    
+
+    public List<ParticipantInfoResponse> getSpectators() {
+        return spectators;
+    }
+
+    public void setSpectators(List<ParticipantInfoResponse> spectators) {
+        this.spectators = spectators;
+    }
+
     public Boolean getCanJoin() {
         return canJoin;
     }

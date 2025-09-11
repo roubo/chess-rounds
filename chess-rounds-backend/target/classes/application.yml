@@ -49,6 +49,13 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
   
+  # Web配置 - 禁用默认静态资源处理，避免与API路径冲突
+  web:
+    resources:
+      static-locations: classpath:/static/
+  mvc:
+    static-path-pattern: /static/**
+  
   # 文件上传配置
   servlet:
     multipart:

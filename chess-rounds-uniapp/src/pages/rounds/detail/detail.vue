@@ -135,8 +135,7 @@ export default {
 		},
 		canStart() {
 			return this.isCreator && 
-				   this.roundInfo.status === 'waiting' && 
-				   this.roundInfo.participants.length >= 2
+				   this.roundInfo.status === 'waiting'
 		},
 		canSpectate() {
 			return !this.isParticipant && this.roundInfo.status === 'playing'

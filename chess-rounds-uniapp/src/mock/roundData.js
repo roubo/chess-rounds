@@ -311,7 +311,38 @@ export const mockRoundsList = [
     totalTableBoard: 150,
     createdAt: '2024-01-15 14:30:00',
     updatedAt: '2024-01-15 18:45:00',
-    description: '周末朋友聚会麻将'
+    description: '周末朋友聚会麻将',
+    spectatorCount: 2,
+    spectators: [
+      {
+        participant_id: 'spectator-001',
+        id: 'spectator-001',
+        name: '观众一',
+        avatar: '/static/avatar5.png',
+        role: 'spectator',
+        status: 'active',
+        joinedAt: '2024-01-15 15:00:00',
+        user_info: {
+          user_id: 'spectator-001',
+          nickname: '观众一',
+          avatar_url: '/static/avatar5.png'
+        }
+      },
+      {
+        participant_id: 'spectator-002',
+        id: 'spectator-002',
+        name: '观众二',
+        avatar: '/static/avatar6.png',
+        role: 'spectator',
+        status: 'active',
+        joinedAt: '2024-01-15 15:30:00',
+        user_info: {
+          user_id: 'spectator-002',
+          nickname: '观众二',
+          avatar_url: '/static/avatar6.png'
+        }
+      }
+    ]
   },
   {
     id: 'round-002',
@@ -353,7 +384,24 @@ export const mockRoundsList = [
     totalTableBoard: 25,
     createdAt: '2024-01-17 15:20:00',
     updatedAt: '2024-01-17 16:10:00',
-    description: '老同学聚会娱乐'
+    description: '老同学聚会娱乐',
+    spectatorCount: 1,
+    spectators: [
+      {
+        participant_id: 'spectator-003',
+        id: 'spectator-003',
+        name: '小明',
+        avatar: '/static/avatar7.png',
+        role: 'spectator',
+        status: 'active',
+        joinedAt: '2024-01-17 16:00:00',
+        user_info: {
+          user_id: 'spectator-003',
+          nickname: '小明',
+          avatar_url: '/static/avatar7.png'
+        }
+      }
+    ]
   }
 ]
 

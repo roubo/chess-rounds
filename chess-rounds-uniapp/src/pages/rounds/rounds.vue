@@ -35,6 +35,27 @@ export default {
 		this.checkAndLoadUserInfo()
 	},
 	
+	// #ifdef MP-WEIXIN
+	// 分享给好友
+	onShareAppMessage() {
+		return {
+			title: '象棋回合 - 一起来下棋吧！',
+			desc: '发现精彩的象棋回合，与棋友一起切磋技艺',
+			path: '/pages/rounds/rounds',
+			imageUrl: '/static/icons/rounds.svg'
+		}
+	},
+	// 分享到朋友圈
+	onShareTimeline() {
+		return {
+			title: '象棋回合 - 发现精彩对局',
+			desc: '与棋友一起切磋技艺，提升棋艺水平',
+			path: '/pages/rounds/rounds',
+			imageUrl: '/static/icons/rounds.svg'
+		}
+	},
+	// #endif
+	
 	onShow() {
 		// 页面显示时检查登录状态和刷新数据
 		this.checkAndLoadUserInfo()
