@@ -31,7 +31,9 @@
 			"style": {
 				"navigationBarTitleText": "回合详情",
 				"navigationBarBackgroundColor": "#5D688A",
-				"navigationBarTextStyle": "white"
+				"navigationBarTextStyle": "white",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
 			}
 		},
 		{

@@ -1,4 +1,8 @@
 <template>
+  <page-meta 
+    :enable-pull-down-refresh="true"
+    @pulldownrefresh="onRefresh"
+  ></page-meta>
   <view class="round-detail">
     <!-- 加载状态 -->
     <view v-if="loading" class="loading-container">
@@ -12,21 +16,14 @@
     </view>
 
     <!-- 正常内容 -->
-    <scroll-view 
-      v-else
-      scroll-y="true" 
-      class="content-container"
-      :refresher-enabled="true"
-      :refresher-triggered="refreshing"
-      @refresherrefresh="onRefresh"
-    >
+    <view v-else class="page-content" :class="{ 'refreshing': refreshing }">
       <!-- 旁观模式提示 -->
       <view v-if="isSpectateMode" class="spectate-mode-tip">
         <text class="spectate-text">👁️ 旁观模式 - 您正在观看此回合</text>
       </view>
       
-      <!-- 固定的回合累计区域 -->
-      <view class="fixed-header">
+      <!-- 吸顶的回合累计区域 -->
+      <view class="sticky-header">
         <view class="amounts-section">
           <view class="section-header">
             <view class="section-left">
@@ -186,7 +183,7 @@
             </view>
           </view>
         </view>
-    </scroll-view>
+    </view>
 
 
 
@@ -605,6 +602,12 @@ export default {
     // 页面卸载时的清理工作
   },
   
+  // 页面级下拉刷新
+  onPullDownRefresh() {
+    console.log('🔄 页面级下拉刷新触发')
+    this.onRefresh()
+  },
+  
   methods: {
     // 转换API返回的记录数据格式
     transformRecordsData(rawRecords) {
@@ -754,14 +757,23 @@ export default {
     
     // 下拉刷新
     async onRefresh() {
+      console.log('🔄 下拉刷新开始')
       try {
         this.refreshing = true
-        await this.refreshAmounts()
+        // 同时刷新参与者数据和累计数据
+        console.log('📡 开始发送API请求...')
+        await Promise.all([
+          this.refreshParticipants(),
+          this.refreshAmounts()
+        ])
+        console.log('✅ 下拉刷新完成')
       } catch (error) {
-        console.error('刷新失败:', error)
+        console.error('❌ 刷新失败:', error)
       } finally {
-          this.refreshing = false
-        }
+        this.refreshing = false
+        // 停止页面级下拉刷新
+        uni.stopPullDownRefresh()
+      }
     },
     
     /**
@@ -800,13 +812,15 @@ export default {
      */
     async refreshParticipants() {
       try {
+        console.log('📡 请求参与者数据:', `/rounds/${this.roundId}/participants`)
         const participantsRes = await roundsApi.getRoundParticipants(this.roundId)
+        console.log('✅ 参与者数据响应:', participantsRes)
         
         if (participantsRes) {
           this.participants = (participantsRes.code === 200 ? participantsRes.data : participantsRes) || []
         }
       } catch (error) {
-        console.error('刷新参与者数据失败:', error)
+        console.error('❌ 刷新参与者数据失败:', error)
         handleApiError(error, '刷新参与者数据失败')
       }
     },
@@ -815,7 +829,9 @@ export default {
     async refreshAmounts() {
       try {
         // 只重新获取游戏记录来更新累计数值
+        console.log('📡 请求游戏记录:', `/records/round/${this.roundId}`)
         const recordsRes = await roundsApi.getGameRecords(this.roundId)
+        console.log('✅ 游戏记录响应:', recordsRes)
         
         if (recordsRes) {
           // recordsRes直接就是数据数组，不需要检查code字段
@@ -827,7 +843,7 @@ export default {
           // uni.showToast() - 已屏蔽
         }
       } catch (error) {
-        console.error('刷新累计数据失败:', error)
+        console.error('❌ 刷新累计数据失败:', error)
         // uni.showToast() - 已屏蔽
       }
     },
@@ -1376,21 +1392,28 @@ export default {
 @import '@/uni.scss';
 
 .round-detail {
-  height: 100vh;
+  min-height: 100vh;
   background-color: #f8f8f8;
-  display: flex;
-  flex-direction: column;
   padding-bottom: calc(92rpx + 48rpx + env(safe-area-inset-bottom));
 }
 
-.content-container {
-  height: 100vh;
+.page-content {
+  min-height: 100vh;
+  
+  &.refreshing {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+  }
 }
 
-.fixed-header {
+.sticky-header {
+  position: sticky;
+  top: 0;
   background-color: #f8f8f8;
   padding: 20rpx;
   margin-bottom: 20rpx;
+  z-index: 10;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 }
 
 
