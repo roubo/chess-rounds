@@ -146,7 +146,7 @@ export default {
 		isClosing: false,
 		isRefreshing: false,
 		createdRoundId: null,
-		qrSize: 120,
+		qrSize: 150,
 		screenWidth: 375,
 		roundParticipants: [],
 		refreshTimer: null,
@@ -548,33 +548,52 @@ export default {
 						const canvas = uni.createCanvasContext('qrCanvas', this)
 						
 						// 使用uni.getImageInfo获取图片信息后绘制
-				uni.getImageInfo({
-					src: downloadResult.tempFilePath,
-					success: (imageInfo) => {
-						// 直接使用drawImage绘制
-						canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
-						canvas.draw(true, () => {
-							// 绘制完成后强制触发页面重新渲染，确保容器调整大小
+			uni.getImageInfo({
+				src: downloadResult.tempFilePath,
+				success: (imageInfo) => {
+					// 计算绘制尺寸，确保二维码完整显示且居中
+					const canvasSize = this.qrSize
+					const padding = 10 // 内边距，确保二维码不贴边
+					const drawSize = canvasSize - padding * 2
+					
+					// 清空画布
+					canvas.clearRect(0, 0, canvasSize, canvasSize)
+					
+					// 绘制白色背景
+					canvas.setFillStyle('#ffffff')
+					canvas.fillRect(0, 0, canvasSize, canvasSize)
+					
+					// 居中绘制二维码
+					canvas.drawImage(downloadResult.tempFilePath, padding, padding, drawSize, drawSize)
+					canvas.draw(true, () => {
+						// 绘制完成后强制触发页面重新渲染，确保容器调整大小
+						this.$forceUpdate()
+						// 延迟一帧再次强制更新，确保布局完全重新计算
+						this.$nextTick(() => {
 							this.$forceUpdate()
-							// 延迟一帧再次强制更新，确保布局完全重新计算
-							this.$nextTick(() => {
-								this.$forceUpdate()
-							})
 						})
-					},
-					fail: (err) => {
-						console.error('获取图片信息失败:', err)
-						// 尝试直接绘制
-						canvas.drawImage(downloadResult.tempFilePath, 0, 0, this.qrSize, this.qrSize)
-						canvas.draw(true, () => {
-							// 绘制完成后强制触发页面重新渲染
+					})
+				},
+				fail: (err) => {
+					console.error('获取图片信息失败:', err)
+					// 尝试直接绘制，使用相同的逻辑
+					const canvasSize = this.qrSize
+					const padding = 10
+					const drawSize = canvasSize - padding * 2
+					
+					canvas.clearRect(0, 0, canvasSize, canvasSize)
+					canvas.setFillStyle('#ffffff')
+					canvas.fillRect(0, 0, canvasSize, canvasSize)
+					canvas.drawImage(downloadResult.tempFilePath, padding, padding, drawSize, drawSize)
+					canvas.draw(true, () => {
+						// 绘制完成后强制触发页面重新渲染
+						this.$forceUpdate()
+						this.$nextTick(() => {
 							this.$forceUpdate()
-							this.$nextTick(() => {
-								this.$forceUpdate()
-							})
 						})
-					}
-				})
+					})
+				}
+			})
 				} else {
 					console.error('下载文件失败:', downloadResult)
 					throw new Error('下载小程序码失败')
@@ -659,16 +678,16 @@ export default {
 				this.screenWidth = systemInfo.screenWidth
 				
 				// 计算合适的二维码尺寸，考虑容器padding和边距
-				// 屏幕宽度 - 左右边距(36rpx) - 容器padding(30rpx) - 二维码容器padding(30rpx)
-				const availableWidth = this.screenWidth - 60 // 预留60px的边距
-				const maxQRSize = Math.min(availableWidth * 0.6, 150) // 最大150px，占可用宽度的60%
-				this.qrSize = Math.max(maxQRSize, 100) // 最小100px
+				// 屏幕宽度 - 左右边距(36rpx) - 容器padding(50rpx) - 二维码容器padding(50rpx)
+				const availableWidth = this.screenWidth - 100 // 预留100px的边距
+				const maxQRSize = Math.min(availableWidth * 0.65, 180) // 最大180px，占可用宽度的65%
+				this.qrSize = Math.max(maxQRSize, 135) // 最小135px
 				
 				console.log('屏幕宽度:', this.screenWidth, '二维码尺寸:', this.qrSize)
 			} catch (error) {
 				console.error('获取系统信息失败:', error)
 				// 使用默认尺寸
-				this.qrSize = 120
+				this.qrSize = 150
 			}
 		},
 		
@@ -981,15 +1000,15 @@ export default {
 }
 
 .qr-container {
-	padding: 15rpx;
+	padding: 25rpx;
 	background: white;
 	border-radius: 8rpx;
 	border: 2rpx solid #f0f0f0;
 	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 	max-width: 100%;
 	/* 使用固定宽度而不是fit-content，避免容器大小变化 */
-	width: 230rpx;
-	height: 230rpx;
+	width: 320rpx;
+	height: 320rpx;
 	margin: 0 auto;
 	/* 确保内容居中显示 */
 	display: flex;
@@ -1008,11 +1027,13 @@ export default {
 
 .qr-canvas {
 	border-radius: 8rpx;
-	width: 200rpx;
-	height: 200rpx;
+	width: 270rpx;
+	height: 270rpx;
 	display: block;
 	/* 确保canvas尺寸固定，避免布局变化 */
 	flex-shrink: 0;
+	/* 确保图片完整显示 */
+	object-fit: contain;
 }
 
 .qr-placeholder {
@@ -1020,8 +1041,8 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 200rpx;
-	height: 200rpx;
+	width: 270rpx;
+	height: 270rpx;
 	border: 2rpx dashed #e0e0e0;
 	border-radius: 6rpx;
 	background-color: #f9f9f9;
