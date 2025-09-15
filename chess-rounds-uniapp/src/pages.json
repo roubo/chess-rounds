@@ -19,6 +19,26 @@
 			}
 		},
 		{
+			"path": "pages/admin/statistics",
+			"style": {
+				"navigationBarTitleText": "管理员统计",
+				"navigationBarBackgroundColor": "#5D688A",
+				"navigationBarTextStyle": "white",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
+			}
+		},
+		{
+			"path": "pages/admin/round-list",
+			"style": {
+				"navigationBarTitleText": "回合列表",
+				"navigationBarBackgroundColor": "#5D688A",
+				"navigationBarTextStyle": "white",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
+			}
+		},
+		{
 			"path": "pages/create-round/create-round",
 			"style": {
 				"navigationBarTitleText": "创建回合",

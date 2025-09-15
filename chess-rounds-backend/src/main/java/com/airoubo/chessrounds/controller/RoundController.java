@@ -3,6 +3,7 @@ package com.airoubo.chessrounds.controller;
 import com.airoubo.chessrounds.dto.round.CreateRoundRequest;
 import com.airoubo.chessrounds.dto.round.ParticipantInfoResponse;
 import com.airoubo.chessrounds.dto.round.RoundInfoResponse;
+import com.airoubo.chessrounds.dto.request.BatchRoundRequest;
 import com.airoubo.chessrounds.dto.request.StartRoundRequest;
 import com.airoubo.chessrounds.service.RoundService;
 import com.airoubo.chessrounds.service.WechatApiService;
@@ -246,6 +247,21 @@ public class RoundController {
             Pageable pageable) {
         Page<RoundInfoResponse> rounds = roundService.searchRounds(title, pageable);
         return ResponseEntity.ok(rounds);
+    }
+    
+    /**
+     * 批量查询回合
+     * 
+     * @param request 批量查询请求
+     * @param pageable 分页参数
+     * @return 回合信息列表
+     */
+    @PostMapping("/batch")
+    public ResponseEntity<List<RoundInfoResponse>> getRoundsByIds(
+            @RequestBody BatchRoundRequest request,
+            Pageable pageable) {
+        Page<RoundInfoResponse> roundsPage = roundService.getRoundsByIds(request.getIds(), pageable);
+        return ResponseEntity.ok(roundsPage.getContent());
     }
     
     /**

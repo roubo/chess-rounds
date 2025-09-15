@@ -166,6 +166,15 @@ public interface RoundService {
     Page<RoundInfoResponse> searchRounds(String keyword, Pageable pageable);
     
     /**
+     * 根据ID列表批量获取回合
+     * 
+     * @param roundIds 回合ID列表
+     * @param pageable 分页参数
+     * @return 回合列表
+     */
+    Page<RoundInfoResponse> getRoundsByIds(List<Long> roundIds, Pageable pageable);
+    
+    /**
      * 获取活跃回合列表
      * 
      * @param pageable 分页参数

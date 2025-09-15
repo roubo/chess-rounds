@@ -11,7 +11,7 @@ const BASE_URL = config.baseURL
 const getUserId = () => {
 	const userInfo = uni.getStorageSync('userInfo')
 	// 兼容不同的字段名：userId 或 user_id
-	const userId = userInfo && (userInfo.userId || userInfo.user_id)
+	const userId = userInfo && (userInfo.userId || userInfo.user_id || userInfo.id)
 	return userId ? userId.toString() : null
 }
 

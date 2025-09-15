@@ -36,6 +36,16 @@
 				<text class="stat-label">平场</text>
 			</view>
 		</view>
+		
+		<!-- 管理员入口 -->
+		<view class="admin-section" v-if="isAdmin">
+			<view class="admin-divider"></view>
+			<button class="admin-btn" @click="goToAdminPanel">
+				<text class="admin-btn-icon">📊</text>
+				<text class="admin-btn-text">管理员统计</text>
+				<text class="admin-btn-arrow">›</text>
+			</button>
+		</view>
 	</view>
 </template>
 
@@ -69,8 +79,30 @@ export default {
 			if (amount < 0) return 'negative-value'
 			return 'neutral-value'
 		},
-
-
+		// 检查是否为管理员
+		isAdmin() {
+			try {
+				const userInfo = uni.getStorageSync('userInfo')
+				if (!userInfo) {
+					console.log('未找到用户信息')
+					return false
+				}
+				
+				// 兼容不同的用户ID字段名
+				const userId = userInfo.userId || userInfo.user_id || userInfo.id
+				console.log('当前用户信息:', userInfo)
+				console.log('提取的用户ID:', userId)
+				
+				// 检查用户ID是否为1（管理员）
+				const isAdminUser = userId === 1 || userId === '1'
+				console.log('是否为管理员:', isAdminUser)
+				
+				return isAdminUser
+			} catch (error) {
+				console.error('检查管理员权限失败:', error)
+				return false
+			}
+		}
 	},
 	methods: {
 		formatAmount(amount) {
@@ -81,6 +113,12 @@ export default {
 		formatWinRate(rate) {
 			if (!rate) return '0.0'
 			return parseFloat(rate).toFixed(1)
+		},
+		// 跳转到管理员统计页面
+		goToAdminPanel() {
+			uni.navigateTo({
+				url: '/pages/admin/statistics'
+			})
 		}
 	}
 }
@@ -184,5 +222,52 @@ export default {
 	font-weight: 500;
 }
 
+/* 管理员入口样式 */
+.admin-section {
+	margin-top: 24rpx;
+}
+
+.admin-divider {
+	height: 1rpx;
+	background-color: #E8E8E8;
+	margin-bottom: 20rpx;
+}
+
+.admin-btn {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 20rpx 24rpx;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border: none;
+	border-radius: 12rpx;
+	box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+	transition: all 0.3s ease;
+}
+
+.admin-btn:active {
+	transform: translateY(2rpx);
+	box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.4);
+}
+
+.admin-btn-icon {
+	font-size: 32rpx;
+	margin-right: 16rpx;
+}
+
+.admin-btn-text {
+	flex: 1;
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #FFFFFF;
+	text-align: left;
+}
+
+.admin-btn-arrow {
+	font-size: 32rpx;
+	color: #FFFFFF;
+	font-weight: bold;
+}
 
 </style>

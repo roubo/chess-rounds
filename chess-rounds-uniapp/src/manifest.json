@@ -67,9 +67,7 @@
                 "urlschemewhitelist" : [ "baidumap", "iosamap" ]
             },
             "sdkConfigs" : {
-                "speech" : {
-                    "ifly" : {}
-                }
+                "ifly" : {}
             },
             "orientation" : [ "portrait-primary" ]
         },
@@ -99,7 +97,6 @@
         "setting" : {
             "urlCheck" : false
         },
-        "usingComponents" : true,
         "permission" : {
             "scope.userLocation" : {
                 "desc" : "演示定位能力"
@@ -113,6 +110,11 @@
         "usingComponents" : true,
         "uniStatistics" : {
             "enable" : true
+        },
+        "dynamicLib" : {
+            "editorLib" : {
+                "provider" : "swan-editor"
+            }
         }
     },
     "mp-baidu" : {
@@ -159,26 +161,6 @@
         }
     },
     "vueVersion" : "2",
-    "mp-kuaishou" : {
-        "uniStatistics" : {
-            "enable" : true
-        }
-    },
-    "mp-lark" : {
-        "uniStatistics" : {
-            "enable" : true
-        }
-    },
-    "mp-qq" : {
-        "uniStatistics" : {
-            "enable" : true
-        }
-    },
-    "quickapp-webview-huawei" : {
-        "uniStatistics" : {
-            "enable" : true
-        }
-    },
     "quickapp-webview-union" : {
         "uniStatistics" : {
             "enable" : true

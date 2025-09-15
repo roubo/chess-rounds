@@ -348,6 +348,17 @@ public class RoundServiceImpl implements RoundService {
     
     @Override
     @Transactional(readOnly = true)
+    public Page<RoundInfoResponse> getRoundsByIds(List<Long> roundIds, Pageable pageable) {
+        if (roundIds == null || roundIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        return roundRepository.findByIdIn(roundIds, pageable)
+                .map(this::convertToRoundInfoResponse);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
     public Page<RoundInfoResponse> getActiveRounds(Pageable pageable) {
         return roundRepository.findByStatus(RoundStatus.PLAYING, pageable)
                 .map(this::convertToRoundInfoResponse);
