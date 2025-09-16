@@ -28,13 +28,6 @@
 				>
 					<text class="tab-text">用户</text>
 				</view>
-				<view 
-					class="tab-item" 
-					:class="{ active: activeTab === 'financial' }"
-					@click="switchTab('financial')"
-				>
-					<text class="tab-text">财务</text>
-				</view>
 			</view>
 
 			<!-- Tab内容区域 -->
@@ -62,7 +55,7 @@
 								:key="key"
 								:class="[
 									key === 'WAITING' ? 'status-waiting' : '',
-									key === 'IN_PROGRESS' ? 'status-playing' : '',
+									(key === 'IN_PROGRESS' || key === 'PLAYING') ? 'status-playing' : '',
 									key === 'FINISHED' ? 'status-finished' : '',
 									key === 'CANCELLED' ? 'status-cancelled' : ''
 								]"
@@ -104,30 +97,6 @@
 							</view>
 						</view>
 
-						<!-- 财务统计卡片 -->
-						<view class="stats-card">
-							<view class="card-header">
-								<text class="card-title">财务统计</text>
-							</view>
-							<view class="stats-grid">
-								<view class="stat-item">
-									<text class="stat-label">总流水</text>
-									<text class="stat-value">¥{{ formatAmount(financialStats.totalAmount) }}</text>
-								</view>
-								<view class="stat-item">
-									<text class="stat-label">今日流水</text>
-									<text class="stat-value">¥{{ formatAmount(financialStats.todayAmount) }}</text>
-								</view>
-								<view class="stat-item">
-									<text class="stat-label">本周流水</text>
-									<text class="stat-value">¥{{ formatAmount(financialStats.thisWeekAmount) }}</text>
-								</view>
-								<view class="stat-item">
-									<text class="stat-label">平均每回合</text>
-									<text class="stat-value">¥{{ formatAmount(financialStats.averagePerRound) }}</text>
-								</view>
-							</view>
-						</view>
 					</view>
 
 					<!-- 用户详情页面 -->
@@ -146,7 +115,7 @@
 								</view>
 							</view>
 							<view class="user-item" v-for="user in userDetails.users" :key="user.userId">
-								<image class="user-avatar" :src="user.avatarUrl || '/static/default-avatar.png'" mode="aspectFill"></image>
+								<image class="user-avatar" :src="getAvatarUrl(user.avatarUrl)" mode="aspectFill"></image>
 								<view class="user-info">
 									<view class="user-name-row">
 										<text class="user-name">{{ user.nickname || '未设置昵称' }}</text>
@@ -172,50 +141,6 @@
 							</button>
 						</view>
 					</view>
-
-					<!-- 财务详情页面 -->
-					<view class="financial-content" v-if="activeTab === 'financial'">
-						<!-- 财务详细统计卡片 -->
-						<view class="stats-card">
-							<view class="card-header">
-								<text class="card-title">财务详细统计</text>
-							</view>
-							<view class="financial-stats">
-								<view class="financial-item">
-									<text class="financial-label">总流水金额</text>
-									<text class="financial-value primary">¥{{ formatAmount(financialDetails.totalAmountAbs) }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">总收入</text>
-									<text class="financial-value success">¥{{ formatAmount(financialDetails.totalIncome) }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">总支出</text>
-									<text class="financial-value danger">¥{{ formatAmount(financialDetails.totalExpense) }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">净收益</text>
-									<text class="financial-value" :class="financialDetails.netProfit >= 0 ? 'success' : 'danger'">¥{{ formatAmount(financialDetails.netProfit) }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">已结束回合数</text>
-									<text class="financial-value">{{ financialDetails.finishedRoundsCount }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">平均每回合流水</text>
-									<text class="financial-value">¥{{ formatAmount(financialDetails.averagePerRound) }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">最高单回合流水</text>
-									<text class="financial-value">¥{{ formatAmount(financialDetails.maxRoundAmount) }}</text>
-								</view>
-								<view class="financial-item">
-									<text class="financial-label">最低单回合流水</text>
-									<text class="financial-value">¥{{ formatAmount(financialDetails.minRoundAmount) }}</text>
-								</view>
-							</view>
-						</view>
-					</view>
 				</view>
 			</scroll-view>
 		</view>
@@ -231,6 +156,7 @@
 
 <script>
 import { adminStatisticsApi } from '@/api/admin.js'
+import AuthManager from '@/utils/auth.js'
 
 export default {
 	data() {
@@ -248,34 +174,14 @@ export default {
 				newUsersToday: 0,
 				newUsersThisWeek: 0
 			},
-			financialStats: {
-				totalAmount: 0,
-				todayAmount: 0,
-				thisWeekAmount: 0,
-				thisMonthAmount: 0,
-				averagePerRound: 0,
-				maxRoundAmount: 0
-			},
 			
 			// 用户详情数据
 			userDetails: {
 				users: [],
 				totalUsers: 0,
 				currentPage: 1,
-				pageSize: 10,
+				pageSize: 5,
 				totalPages: 0
-			},
-			
-			// 财务详情数据
-			financialDetails: {
-				totalAmountAbs: 0,
-				totalIncome: 0,
-				totalExpense: 0,
-				netProfit: 0,
-				finishedRoundsCount: 0,
-				averagePerRound: 0,
-				maxRoundAmount: 0,
-				minRoundAmount: 0
 			},
 			
 			// 排序选项
@@ -346,8 +252,6 @@ export default {
 			// 根据tab加载对应数据
 			if (tab === 'users' && this.userDetails.users.length === 0) {
 				this.loadUserDetails()
-			} else if (tab === 'financial' && this.financialDetails.totalAmountAbs === 0) {
-				this.loadFinancialDetails()
 			}
 		},
 		
@@ -406,22 +310,10 @@ export default {
 						newUsersThisWeek: userStatsData.new_users_this_week || userStatsData.newUsersThisWeek || 0
 					}
 					
-					// 财务统计数据映射
-					const financialStatsData = data.financial_statistics || data.financialStatistics || {}
-					this.financialStats = {
-						totalAmount: financialStatsData.total_amount || financialStatsData.totalAmount || 0,
-						todayAmount: financialStatsData.today_amount || financialStatsData.todayAmount || 0,
-						thisWeekAmount: financialStatsData.this_week_amount || financialStatsData.thisWeekAmount || 0,
-						thisMonthAmount: financialStatsData.this_month_amount || financialStatsData.thisMonthAmount || 0,
-						averagePerRound: financialStatsData.average_per_round || financialStatsData.averagePerRound || 0,
-						maxRoundAmount: financialStatsData.max_round_amount || financialStatsData.maxRoundAmount || 0
-					}
-					
 					console.log('原始后端数据:', response.data)
 					console.log('加载的统计数据:', {
 						roundStats: this.roundStats,
-						userStats: this.userStats,
-						financialStats: this.financialStats
+						userStats: this.userStats
 					})
 				} else {
 					console.error('API响应失败:', response)
@@ -478,42 +370,6 @@ export default {
 			}
 		},
 		
-		// 加载财务详情
-		async loadFinancialDetails() {
-			this.loading = true
-			try {
-				const response = await adminStatisticsApi.getFinancialDetails()
-			console.log('财务详情API原始响应:', response)
-			if (response && (response.success !== false)) {
-				// 处理后端返回的下划线命名数据
-				const data = response.data || response
-					console.log('原始财务详情数据:', data)
-					
-					this.financialDetails = {
-						totalAmountAbs: data.total_amount_abs || data.totalAmountAbs || 0,
-						totalIncome: data.total_income || data.totalIncome || 0,
-						totalExpense: data.total_expense || data.totalExpense || 0,
-						netProfit: data.net_profit || data.netProfit || 0,
-						finishedRoundsCount: data.finished_rounds_count || data.finishedRoundsCount || 0,
-						averagePerRound: data.average_per_round || data.averagePerRound || 0,
-						maxRoundAmount: data.max_round_amount || data.maxRoundAmount || 0,
-						minRoundAmount: data.min_round_amount || data.minRoundAmount || 0
-					}
-					console.log('处理后的财务详情数据:', this.financialDetails)
-				} else {
-					console.error('财务详情API响应失败:', response)
-				}
-			} catch (error) {
-				console.error('加载财务详情失败:', error)
-				uni.showToast({
-					title: '加载财务详情失败',
-					icon: 'none'
-				})
-			} finally {
-				this.loading = false
-			}
-		},
-		
 		// 刷新数据
 		async refreshData() {
 			try {
@@ -526,8 +382,6 @@ export default {
 				// 根据当前tab重新加载对应数据
 				if (this.activeTab === 'users') {
 					await this.loadUserDetails()
-				} else if (this.activeTab === 'financial') {
-					await this.loadFinancialDetails()
 				}
 				
 				uni.showToast({
@@ -590,6 +444,7 @@ export default {
 			const labels = {
 				'WAITING': '等待中',
 				'IN_PROGRESS': '进行中',
+				'PLAYING': '进行中',
 				'FINISHED': '已结束',
 				'CANCELLED': '已取消'
 			}
@@ -632,6 +487,11 @@ export default {
 			if (!dateString) return '-'
 			const date = new Date(dateString)
 			return date.toLocaleDateString('zh-CN')
+		},
+		
+		// 获取头像URL
+		getAvatarUrl(avatarUrl) {
+			return AuthManager.getAvatarUrl(avatarUrl)
 		}
 	}
 }
@@ -749,7 +609,34 @@ export default {
 }
 
 .stat-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 	text-align: center;
+	padding: 20rpx;
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border-radius: 12rpx;
+	border: 1rpx solid #e9ecef;
+	transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+	transform: translateY(-2rpx);
+	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+	font-size: 26rpx;
+	color: #666;
+	margin-bottom: 12rpx;
+	font-weight: 500;
+}
+
+.stat-value {
+	font-size: 40rpx;
+	font-weight: bold;
+	color: #5D688A;
+	line-height: 1.2;
 }
 
 /* 回合统计容器 */
@@ -801,10 +688,7 @@ export default {
 	line-height: 1;
 }
 
-.stat-label {
-	font-size: 28rpx;
-	opacity: 0.8;
-}
+/* 移除重复的样式定义，使用统一的样式 */
 
 .stat-arrow {
 	display: flex;
@@ -884,57 +768,17 @@ export default {
 }
 
 .stat-label {
-	font-size: 24rpx;
+	font-size: 26rpx;
 	color: #666;
-	margin-bottom: 8rpx;
+	margin-bottom: 12rpx;
+	font-weight: 500;
 }
 
 .stat-value {
-	font-size: 36rpx;
+	font-size: 40rpx;
 	font-weight: bold;
 	color: #5D688A;
-}
-
-/* 财务统计 */
-.financial-stats {
-	display: flex;
-	flex-direction: column;
-	gap: 20rpx;
-}
-
-.financial-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 20rpx 0;
-	border-bottom: 1rpx solid #f0f0f0;
-}
-
-.financial-item:last-child {
-	border-bottom: none;
-}
-
-.financial-label {
-	font-size: 28rpx;
-	color: #666;
-}
-
-.financial-value {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #333;
-}
-
-.financial-value.primary {
-	color: #5D688A;
-}
-
-.financial-value.success {
-	color: #52c41a;
-}
-
-.financial-value.danger {
-	color: #ff4d4f;
+	line-height: 1.2;
 }
 
 /* 用户列表 */

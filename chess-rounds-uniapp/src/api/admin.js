@@ -50,13 +50,32 @@ const request = (url, options = {}) => {
 			data: options.data || {},
 			header: headers,
 			success: (res) => {
+				console.log('Admin API响应:', res.statusCode, res.data)
+				
 				if (res.statusCode === 200) {
-					resolve(res.data)
+					// 检查业务状态码
+					if (res.data && typeof res.data === 'object') {
+						// 如果响应包含code字段，检查业务状态码
+						if (res.data.hasOwnProperty('code')) {
+							if (res.data.code === 200) {
+								resolve(res.data)
+							} else {
+								reject(new Error(res.data.message || '业务处理失败'))
+							}
+						} else {
+							// 没有code字段，直接返回数据
+							resolve(res.data)
+						}
+					} else {
+						// 非对象响应，直接返回
+						resolve(res.data)
+					}
 				} else {
 					reject(new Error(`请求失败: ${res.statusCode}`))
 				}
 			},
 			fail: (err) => {
+				console.error('Admin API请求失败:', err)
 				reject(err)
 			}
 		})
@@ -190,6 +209,7 @@ export const handleAdminApiError = (error) => {
 }
 
 export default {
+	request,
 	adminStatisticsApi,
 	handleAdminApiError
 }

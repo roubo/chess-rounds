@@ -42,7 +42,7 @@
 			
 			<view class="participants-list">
 				<view class="participant-item" v-for="participant in participants" :key="participant.id">
-					<image class="participant-avatar" :src="participant.avatar || '/static/default-avatar.png'" mode="aspectFill"></image>
+					<image class="participant-avatar" :src="getAvatarUrl(participant.avatar)" mode="aspectFill"></image>
 					<view class="participant-info">
 						<text class="participant-name">{{ participant.nickname }}</text>
 						<text class="participant-role">{{ participant.isCreator ? '创建者' : '参与者' }}</text>
@@ -145,6 +145,9 @@ export default {
 		}
 	},
 	methods: {
+		getAvatarUrl(avatarUrl) {
+			return this.$auth.getAvatarUrl(avatarUrl)
+		},
 		loadRoundDetail() {
 			// 这里应该调用API加载回合详情
 			// 目前使用示例数据

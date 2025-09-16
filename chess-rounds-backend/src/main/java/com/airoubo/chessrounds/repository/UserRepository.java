@@ -60,13 +60,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByLastLoginAtAfter(LocalDateTime lastLoginTime);
     
     /**
-     * 统计活跃用户数量
+     * 统计活跃用户数量（排除台板数据）
      * 
      * @param status 用户状态
      * @param lastLoginTime 最后登录时间
      * @return 用户数量
      */
-    @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status AND u.lastLoginAt >= :lastLoginTime")
+    @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status AND u.lastLoginAt >= :lastLoginTime " +
+           "AND (u.nickname IS NULL OR NOT u.nickname LIKE '台板-%') " +
+           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%')")
     Long countActiveUsers(@Param("status") Integer status, @Param("lastLoginTime") LocalDateTime lastLoginTime);
     
     /**

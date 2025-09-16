@@ -101,20 +101,26 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         // 构建分页
         Pageable pageable = PageRequest.of(page - 1, size, sort);
         
-        // 查询用户
+        // 查询所有用户
         Page<User> userPage = userRepository.findAll(pageable);
         
-        // 转换为DTO
+        // 过滤台板数据并转换为DTO
         List<UserDetailDTO> userDetails = userPage.getContent().stream()
+            .filter(user -> !isTableUser(user))  // 过滤台板用户
             .map(this::convertToUserDetailDTO)
             .collect(Collectors.toList());
         
+        // 计算过滤后的总数（需要重新计算，因为分页是在过滤前进行的）
+        long totalRealUsers = userRepository.findAll().stream()
+            .filter(user -> !isTableUser(user))
+            .count();
+        
         return new AdminUserDetailResponse(
             userDetails,
-            (int) userPage.getTotalElements(),
+            (int) totalRealUsers,
             page,
             size,
-            userPage.getTotalPages(),
+            (int) Math.ceil((double) totalRealUsers / size),
             Instant.now()
         );
     }
@@ -204,11 +210,17 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
      */
     private UserStatisticsDTO calculateUserStatistics() {
         List<User> allUsers = userRepository.findAll();
-        int totalUsers = allUsers.size();
+        
+        // 过滤台板数据：排除nickname包含"台板-"或openid以"table_"开头的用户
+        List<User> realUsers = allUsers.stream()
+            .filter(user -> !isTableUser(user))
+            .collect(Collectors.toList());
+        
+        int totalUsers = realUsers.size();
         
         // 计算活跃用户（最近30天有登录）
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minus(30, ChronoUnit.DAYS);
-        long activeUsers = allUsers.stream()
+        long activeUsers = realUsers.stream()
             .filter(user -> user.getLastLoginAt() != null && user.getLastLoginAt().isAfter(thirtyDaysAgo))
             .count();
         
@@ -216,13 +228,13 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         
         // 计算今日新增用户
         LocalDateTime todayStart = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
-        long newUsersToday = allUsers.stream()
+        long newUsersToday = realUsers.stream()
             .filter(user -> user.getCreatedAt() != null && user.getCreatedAt().isAfter(todayStart))
             .count();
         
         // 计算本周新增用户
         LocalDateTime weekStart = LocalDateTime.now().minus(7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
-        long newUsersThisWeek = allUsers.stream()
+        long newUsersThisWeek = realUsers.stream()
             .filter(user -> user.getCreatedAt() != null && user.getCreatedAt().isAfter(weekStart))
             .count();
         
@@ -235,6 +247,30 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         );
     }
     
+    /**
+     * 判断是否为台板用户
+     * 
+     * @param user 用户对象
+     * @return 是否为台板用户
+     */
+    private boolean isTableUser(User user) {
+        if (user == null) {
+            return false;
+        }
+        
+        // 检查nickname是否包含"台板-"
+        if (user.getNickname() != null && user.getNickname().startsWith("台板-")) {
+            return true;
+        }
+        
+        // 检查openid是否以"table_"开头
+        if (user.getOpenid() != null && user.getOpenid().startsWith("table_")) {
+            return true;
+        }
+        
+        return false;
+    }
+
     /**
      * 计算财务统计数据
      */
@@ -313,11 +349,23 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
             .distinct()
             .count();
         
-        // 计算用户总流水
-        BigDecimal totalAmount = userRecords.stream()
-            .filter(record -> record.getAmountChange() != null)
-            .map(record -> record.getAmountChange().abs())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // 计算用户总流水（金额乘以倍率之和，保留正负号）
+        // 使用自定义查询来确保Round实体被正确加载
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        
+        for (ParticipantRecord record : userRecords) {
+            if (record.getAmountChange() != null) {
+                // 通过roundId查询Round实体来获取倍率
+                Round round = roundRepository.findById(record.getRoundId()).orElse(null);
+                if (round != null) {
+                    BigDecimal multiplier = round.getMultiplier();
+                    if (multiplier == null) {
+                        multiplier = BigDecimal.ONE;
+                    }
+                    totalAmount = totalAmount.add(record.getAmountChange().multiply(multiplier));
+                }
+            }
+        }
         
         // 判断是否活跃用户（最近30天有登录）
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minus(30, ChronoUnit.DAYS);

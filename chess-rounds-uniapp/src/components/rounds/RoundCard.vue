@@ -64,6 +64,7 @@
 <script>
 import { roundsApi, handleApiError } from '@/api/rounds.js'
 import config from '@/config/api.js'
+import AuthManager from '@/utils/auth.js'
 
 export default {
 	name: 'RoundCard',
@@ -342,13 +343,8 @@ export default {
 		
 		getSpectatorAvatarUrl(spectator) {
 			const avatarUrl = spectator.user_info?.avatar_url || spectator.avatarUrl || spectator.avatar
-			if (!avatarUrl) {
-				return '/static/images/default-avatar.png'
-			}
-			if (avatarUrl.startsWith('http')) {
-				return avatarUrl
-			}
-			return config.staticBaseURL + avatarUrl
+			// 使用统一的头像URL处理方法
+			return AuthManager.getAvatarUrl(avatarUrl)
 		},
 		
 		getSpectatorName(spectator) {

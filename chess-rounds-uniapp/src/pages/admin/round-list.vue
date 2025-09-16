@@ -41,36 +41,68 @@
 							:key="round.id"
 						>
 							<view class="round-card">
-								<!-- 回合状态和时间 -->
+								<!-- 回合头部 -->
 								<view class="round-header">
-									<view class="status-badge" :class="[
-										round.status === 'WAITING' ? 'status-waiting' : '',
-										(round.status === 'IN_PROGRESS' || round.status === 'PLAYING') ? 'status-playing' : '',
-										round.status === 'FINISHED' ? 'status-finished' : '',
-										round.status === 'CANCELLED' ? 'status-cancelled' : ''
-									]">
-										<text class="status-text">{{ getStatusLabel(round.status) }}</text>
+									<view class="round-info-horizontal">
+										<view class="status-badge" :class="[
+											round.status === 'WAITING' ? 'status-waiting' : '',
+											(round.status === 'IN_PROGRESS' || round.status === 'PLAYING') ? 'status-playing' : '',
+											round.status === 'FINISHED' ? 'status-finished' : '',
+											round.status === 'CANCELLED' ? 'status-cancelled' : ''
+										]">
+											<text class="status-text">{{ getStatusLabel(round.status) }}</text>
+										</view>
+										<view v-if="round.multiplier && round.multiplier > 1" class="multiplier-hint">
+											{{ round.multiplier }}倍
+										</view>
 									</view>
-									<text class="round-time">{{ formatTime(round.created_at) }}</text>
+									<view class="create-time-left">
+										<text class="create-time-text">{{ formatTime(round.created_at) }}</text>
+									</view>
 								</view>
-
-								<!-- 回合信息 -->
-								<view class="round-info">
-									<view class="info-row">
-										<text class="info-label">回合ID:</text>
-										<text class="info-value">#{{ round.id }}</text>
+								
+								<!-- 参与者列表 -->
+								<view v-if="round.participants && round.participants.length > 0" class="amounts-list">
+									<view 
+										v-for="participant in round.participants" 
+										:key="participant.participant_id"
+										class="amount-item-new"
+										:class="{ 'current-user': participant.isCurrentUser }"
+									>
+										<image 
+				:src="getAvatarUrl(participant.user_info && participant.user_info.avatar_url)" 
+				class="participant-avatar"
+				mode="aspectFill"
+			/>
+										<view class="participant-info">
+											<text class="participant-name">{{ (participant.user_info && participant.user_info.nickname) || '未知用户' }}</text>
+											<text 
+												class="participant-amount"
+												:class="{
+													'positive': (participant.total_amount || 0) > 0,
+													'negative': (participant.total_amount || 0) < 0
+												}"
+											>
+												{{ (participant.total_amount || 0) > 0 ? '+' : '' }}{{ participant.total_amount || 0 }}
+											</text>
+										</view>
 									</view>
-									<view class="info-row" v-if="round.multiplier">
-										<text class="info-label">倍率:</text>
-										<text class="info-value">{{ round.multiplier }}x</text>
+								</view>
+								
+								<!-- 旁观者列表 -->
+								<view v-if="round.spectators && round.spectators.length > 0" class="spectators-section">
+									<view class="spectators-header">
+										<text class="spectators-title">旁观者 ({{ round.spectators.length }})</text>
 									</view>
-									<view class="info-row" v-if="round.participants_count !== undefined">
-										<text class="info-label">参与人数:</text>
-										<text class="info-value">{{ round.participants_count }}人</text>
-									</view>
-									<view class="info-row" v-if="round.spectators_count !== undefined">
-										<text class="info-label">旁观人数:</text>
-										<text class="info-value">{{ round.spectators_count }}人</text>
+									<view class="spectators-list">
+										<view v-for="spectator in round.spectators" :key="spectator.participant_id" class="spectator-item">
+											<image 
+										:src="getAvatarUrl(spectator.user_info && spectator.user_info.avatar_url)" 
+										class="spectator-avatar" 
+										mode="aspectFill"
+									></image>
+											<text class="spectator-name">{{ (spectator.user_info && spectator.user_info.nickname) || '未知用户' }}</text>
+										</view>
 									</view>
 								</view>
 							</view>
@@ -91,6 +123,8 @@
 </template>
 
 <script>
+import AuthManager from '@/utils/auth.js'
+
 export default {
 	data() {
 		return {
@@ -194,20 +228,24 @@ export default {
 						return
 					}
 					
-					response = await uni.request({
-						url: `${this.$config.baseURL}/rounds/batch`,
+					// 使用admin API方法
+					const adminApi = require('@/api/admin.js').default
+					const batchResponse = await adminApi.request('/rounds/batch', {
 						method: 'POST',
-						header: headers,
 						data: {
 							ids: currentPageIds
 						}
 					})
+					// 包装响应格式以保持一致性
+					response = {
+						statusCode: 200,
+						data: batchResponse
+					}
 				} else {
 					// 使用原有的搜索接口
-					response = await uni.request({
-						url: `${this.$config.baseURL}/rounds/search`,
+					const adminApi = require('@/api/admin.js').default
+					const searchResponse = await adminApi.request('/rounds/search', {
 						method: 'GET',
-						header: headers,
 						data: {
 							title: '', // 空标题获取所有回合
 							page: this.page - 1, // Spring Boot分页从0开始
@@ -215,6 +253,11 @@ export default {
 							status: this.status !== 'ALL' ? this.status : undefined // 传递状态参数
 						}
 					})
+					// 包装响应格式以保持一致性
+					response = {
+						statusCode: 200,
+						data: searchResponse
+					}
 				}
 				
 				if (response.statusCode === 200) {
@@ -241,6 +284,20 @@ export default {
 							this.page++
 						}
 					}
+					
+					// 数据字段映射和处理
+					allRounds = allRounds.map(round => {
+						return {
+							...round,
+							// 映射API字段到前端期望的字段
+							id: round.round_id || round.id,
+							multiplier: round.base_amount || round.baseAmount || round.multiplier,
+							participants_count: round.current_participants || round.participants?.length || 0,
+							spectators_count: round.spectator_count || round.spectators?.length || 0,
+							// 状态字段统一处理
+							status: (round.status || '').toUpperCase()
+						}
+					})
 					
 					// 更新回合列表
 					if (refresh) {
@@ -305,7 +362,11 @@ export default {
 			return labels[status] || status
 		},
 		
-
+		// 获取头像URL
+		getAvatarUrl(avatarUrl) {
+			return AuthManager.getAvatarUrl(avatarUrl)
+		},
+		
 		// 格式化时间
 		formatTime(timeStr) {
 			if (!timeStr) return ''
@@ -459,6 +520,12 @@ export default {
 	margin-bottom: 24rpx;
 }
 
+.round-info-horizontal {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+}
+
 .status-badge {
 	padding: 8rpx 16rpx;
 	border-radius: 20rpx;
@@ -469,21 +536,160 @@ export default {
 	font-weight: 500;
 }
 
-.round-time {
-	font-size: 24rpx;
-	color: #999;
+.multiplier-hint {
+	font-size: 22rpx;
+	color: #007AFF;
+	font-weight: 500;
+	background-color: rgba(0, 122, 255, 0.1);
+	padding: 4rpx 8rpx;
+	border-radius: 8rpx;
 }
 
-.round-info {
+.create-time-left {
+	display: flex;
+	align-items: center;
+}
+
+.create-time-text {
+	font-size: 22rpx;
+	color: #999;
+	background-color: #f8f9fa;
+	padding: 6rpx 12rpx;
+	border-radius: 12rpx;
+	border: 1rpx solid #e9ecef;
+	font-weight: 500;
+}
+
+/* 参与者列表样式 */
+.amounts-list {
+	display: flex;
+	gap: 12rpx;
+	margin-bottom: 16rpx;
+	flex-wrap: wrap;
+}
+
+.amount-item-new {
 	display: flex;
 	flex-direction: column;
+	align-items: center;
+	padding: 12rpx 8rpx;
+	background-color: #f8f9fa;
+	border-radius: 12rpx;
+	border: 1rpx solid #e9ecef;
+	gap: 8rpx;
+	flex: 1;
+	min-width: 0;
+	max-width: 200rpx;
+}
+
+.amount-item-new.current-user {
+	border-color: #007AFF;
+	background-color: rgba(0, 122, 255, 0.1);
+}
+
+.participant-avatar {
+	width: 60rpx;
+	height: 60rpx;
+	border-radius: 50%;
+	background-color: #ddd;
+}
+
+.participant-info {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4rpx;
+	width: 100%;
+}
+
+.participant-name {
+	font-size: 24rpx;
+	font-weight: 500;
+	color: #333;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.participant-amount {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333;
+	text-align: center;
+	min-width: 60rpx;
+}
+
+.participant-amount.positive {
+	color: #52c41a;
+}
+
+.participant-amount.negative {
+	color: #ff4d4f;
+}
+
+/* 旁观者列表样式 */
+.spectators-section {
+	margin-top: 24rpx;
+	padding-top: 24rpx;
+	border-top: 1rpx solid #f0f0f0;
+}
+
+.spectators-header {
+	margin-bottom: 16rpx;
+}
+
+.spectators-title {
+	font-size: 24rpx;
+	font-weight: 600;
+	color: #666;
+}
+
+.spectators-list {
+	display: flex;
+	flex-wrap: wrap;
 	gap: 12rpx;
+}
+
+.spectator-item {
+	display: flex;
+	align-items: center;
+	background: #f8f9fa;
+	border-radius: 20rpx;
+	padding: 8rpx 16rpx;
+	min-width: 0;
+}
+
+.spectator-avatar {
+	width: 32rpx;
+	height: 32rpx;
+	border-radius: 50%;
+	margin-right: 8rpx;
+	flex-shrink: 0;
+}
+
+.spectator-name {
+	font-size: 22rpx;
+	color: #666;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100rpx;
+}
+
+/* 基础信息 */
+.round-basic-info {
+	margin-top: 16rpx;
+	padding-top: 16rpx;
+	border-top: 1rpx solid #f0f0f0;
 }
 
 .info-row {
 	display: flex;
 	align-items: center;
 	gap: 16rpx;
+	margin-bottom: 8rpx;
 }
 
 .info-label {

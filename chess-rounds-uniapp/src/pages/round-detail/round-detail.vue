@@ -301,6 +301,7 @@
 import { roundsApi, handleApiError } from '@/api/rounds'
 import config from '@/config/api'
 import toastMixin from '@/mixins/toast'
+import AuthManager from '@/utils/auth'
 
 export default {
   name: 'RoundDetail',
@@ -1144,13 +1145,8 @@ export default {
       // 适配新的API格式：用户信息在user_info中
       const avatarUrl = (participant.user_info && participant.user_info.avatar_url) || participant.avatar
       
-      // 处理相对路径的头像URL
-      if (avatarUrl && avatarUrl.startsWith('/static/')) {
-        const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
-        return baseURL + avatarUrl
-      }
-      
-      return avatarUrl || '/static/images/default-avatar.png'
+      // 使用统一的头像URL处理方法
+      return AuthManager.getAvatarUrl(avatarUrl)
     },
     
     // 获取旁观者头像URL
@@ -1162,13 +1158,8 @@ export default {
       // 适配新的API格式：用户信息在user_info中
       const avatarUrl = (spectator.user_info && spectator.user_info.avatar_url) || spectator.avatar
       
-      // 处理相对路径的头像URL
-      if (avatarUrl && avatarUrl.startsWith('/static/')) {
-        const baseURL = config.staticBaseURL || 'https://api.airoubo.com'
-        return baseURL + avatarUrl
-      }
-      
-      return avatarUrl || '/static/images/default-avatar.png'
+      // 使用统一的头像URL处理方法
+      return AuthManager.getAvatarUrl(avatarUrl)
     },
     
     // 显示收盘确认弹框

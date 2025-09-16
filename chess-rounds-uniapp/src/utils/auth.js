@@ -197,9 +197,13 @@ export class AuthManager {
 			return avatarUrl
 		}
 		
-		// 如果是相对路径，拼接基础URL
+		// 如果是相对路径，检查是否为默认头像
 		if (avatarUrl.startsWith('/')) {
-			// 使用统一的静态资源基础URL配置
+			// 如果包含默认头像路径，直接返回本地路径，不拼接URL
+			if (avatarUrl.includes('static/default-avatar.png')) {
+				return '/static/images/default-avatar.png'
+			}
+			// 其他相对路径，拼接基础URL
 			return config.staticBaseURL + avatarUrl
 		}
 		
