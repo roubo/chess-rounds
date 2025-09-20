@@ -101,19 +101,16 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         // 构建分页
         Pageable pageable = PageRequest.of(page - 1, size, sort);
         
-        // 查询所有用户
-        Page<User> userPage = userRepository.findAll(pageable);
+        // 直接查询非台板用户（在数据库层面过滤）
+        Page<User> userPage = userRepository.findNonTableUsers(pageable);
         
-        // 过滤台板数据并转换为DTO
+        // 转换为DTO
         List<UserDetailDTO> userDetails = userPage.getContent().stream()
-            .filter(user -> !isTableUser(user))  // 过滤台板用户
             .map(this::convertToUserDetailDTO)
             .collect(Collectors.toList());
         
-        // 计算过滤后的总数（需要重新计算，因为分页是在过滤前进行的）
-        long totalRealUsers = userRepository.findAll().stream()
-            .filter(user -> !isTableUser(user))
-            .count();
+        // 获取非台板用户总数
+        long totalRealUsers = userRepository.countNonTableUsers();
         
         return new AdminUserDetailResponse(
             userDetails,

@@ -594,13 +594,13 @@ export default {
 }
 
 .history-result.win {
-	background: #e8f5e8;
-	color: #4caf50;
+	background: #ffebee;
+	color: #f44336;
 }
 
 .history-result.lose {
-	background: #ffebee;
-	color: #f44336;
+	background: #e8f5e8;
+	color: #4caf50;
 }
 
 .history-result.draw {

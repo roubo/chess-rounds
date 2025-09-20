@@ -201,6 +201,14 @@ public interface RoundService {
     void deleteRound(Long roundId, Long userId);
     
     /**
+     * 管理员删除回合
+     * 管理员可以删除任何状态的回合，不受创建者权限限制
+     * 
+     * @param roundId 回合ID
+     */
+    void adminDeleteRound(Long roundId);
+    
+    /**
      * 检查用户是否是回合参与者
      * 
      * @param roundId 回合ID

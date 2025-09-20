@@ -181,6 +181,13 @@ export const roundsApi = {
 		return request(`/rounds/${roundId}`, {
 			method: 'DELETE'
 		})
+	},
+	
+	// 管理员删除回合接口
+	adminDeleteRound(roundId) {
+		return request(`/admin/rounds/${roundId}`, {
+			method: 'DELETE'
+		})
 	}
 }
 

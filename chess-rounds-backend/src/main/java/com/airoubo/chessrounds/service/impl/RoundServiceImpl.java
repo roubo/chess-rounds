@@ -435,6 +435,43 @@ public class RoundServiceImpl implements RoundService {
         // 3. 删除回合记录
          roundRepository.delete(round);
     }
+
+    @Override
+    public void adminDeleteRound(Long roundId) {
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new RuntimeException("回合不存在"));
+        
+        // 管理员删除不检查权限和状态，可以删除任何回合
+        
+        // 删除相关的所有记录
+        // 1. 删除参与者记录
+        participantRepository.deleteByRoundId(roundId);
+        
+        // 2. 删除游戏记录（如果有的话）
+        // 注意：需要先删除子记录，再删除主记录
+        try {
+            // 删除参与者记录表
+            entityManager.createQuery("DELETE FROM ParticipantRecord pr WHERE pr.roundId = :roundId")
+                    .setParameter("roundId", roundId)
+                    .executeUpdate();
+            
+            // 删除游戏记录表
+            entityManager.createQuery("DELETE FROM Record r WHERE r.roundId = :roundId")
+                    .setParameter("roundId", roundId)
+                    .executeUpdate();
+            
+            // 删除评分记录
+            entityManager.createQuery("DELETE FROM Rating rt WHERE rt.roundId = :roundId")
+                    .setParameter("roundId", roundId)
+                    .executeUpdate();
+        } catch (Exception e) {
+            // 如果删除相关记录失败，记录日志但继续删除回合
+            System.err.println("删除回合相关记录时出错: " + e.getMessage());
+        }
+        
+        // 3. 删除回合记录
+        roundRepository.delete(round);
+    }
     
     @Override
     @Transactional(readOnly = true)

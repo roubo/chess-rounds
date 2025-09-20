@@ -471,15 +471,15 @@ export default {
 
 // 胜负平状态颜色
 .result-win {
-	background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
-	border: 1rpx solid #27AE60;
-	color: #27AE60;
-}
-
-.result-lose {
 	background: linear-gradient(135deg, #FDF2F2 0%, #FEF5F5 100%);
 	border: 1rpx solid #E74C3C;
 	color: #E74C3C;
+}
+
+.result-lose {
+	background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
+	border: 1rpx solid #27AE60;
+	color: #27AE60;
 }
 
 .result-draw {

@@ -34,6 +34,7 @@ com/airoubo/chessrounds/service/AdminStatisticsService.class
 com/airoubo/chessrounds/dto/statistics/AdminUserDetailResponse.class
 com/airoubo/chessrounds/service/SystemConfigService$ConfigTypes.class
 com/airoubo/chessrounds/service/UserService.class
+com/airoubo/chessrounds/controller/AdminRoundController.class
 com/airoubo/chessrounds/service/RecordService.class
 com/airoubo/chessrounds/entity/SystemConfig.class
 com/airoubo/chessrounds/dto/statistics/UserDetailDTO.class

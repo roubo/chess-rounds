@@ -56,8 +56,19 @@
 											{{ round.multiplier }}倍
 										</view>
 									</view>
-									<view class="create-time-left">
-										<text class="create-time-text">{{ formatTime(round.created_at) }}</text>
+									<view class="round-header-right">
+										<view class="create-time-left">
+											<text class="create-time-text">{{ formatTime(round.created_at) }}</text>
+										</view>
+										<!-- 关闭回合按钮 - 只对等待中和进行中的回合显示 -->
+										<view 
+											v-if="round.status === 'WAITING' || round.status === 'IN_PROGRESS' || round.status === 'PLAYING'"
+											class="close-round-btn"
+											:class="{ 'closing': closingRoundId === round.id }"
+											@click="showCloseRoundConfirm(round)"
+										>
+											<text class="close-btn-text">{{ closingRoundId === round.id ? '关闭中...' : '关闭' }}</text>
+										</view>
 									</view>
 								</view>
 								
@@ -138,7 +149,8 @@ export default {
 			loadingMore: false,
 			hasMore: true,
 			page: 1,
-			pageSize: 20
+			pageSize: 20,
+			closingRoundId: null // 正在关闭的回合ID
 		}
 	},
 	
@@ -399,6 +411,56 @@ export default {
 			} catch (error) {
 				return timeStr
 			}
+		},
+		
+		// 显示关闭回合确认弹框
+		showCloseRoundConfirm(round) {
+			uni.showModal({
+				title: '确认关闭回合',
+				content: `确定要关闭回合 "${round.round_code || round.code || round.id}" 吗？关闭后将无法恢复。`,
+				confirmText: '确定关闭',
+				cancelText: '取消',
+				confirmColor: '#ff4757',
+				success: (res) => {
+					if (res.confirm) {
+						this.closeRound(round)
+					}
+				}
+			})
+		},
+		
+		// 关闭回合
+		async closeRound(round) {
+			if (this.closingRoundId === round.id) {
+				return // 防止重复点击
+			}
+			
+			this.closingRoundId = round.id
+			
+			try {
+				// 导入rounds API
+				const { roundsApi } = require('@/api/rounds.js')
+				
+				// 调用管理员删除回合API
+				await roundsApi.adminDeleteRound(round.id)
+				
+				uni.showToast({
+					title: '回合已关闭',
+					icon: 'success'
+				})
+				
+				// 从列表中移除已关闭的回合
+				this.rounds = this.rounds.filter(r => r.id !== round.id)
+				
+			} catch (error) {
+				console.error('关闭回合失败:', error)
+				uni.showToast({
+					title: error.message || '关闭失败，请重试',
+					icon: 'none'
+				})
+			} finally {
+				this.closingRoundId = null
+			}
 		}
 	}
 }
@@ -526,6 +588,12 @@ export default {
 	gap: 8rpx;
 }
 
+.round-header-right {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
+}
+
 .status-badge {
 	padding: 8rpx 16rpx;
 	border-radius: 20rpx;
@@ -557,6 +625,30 @@ export default {
 	padding: 6rpx 12rpx;
 	border-radius: 12rpx;
 	border: 1rpx solid #e9ecef;
+	font-weight: 500;
+}
+
+/* 关闭回合按钮样式 */
+.close-round-btn {
+	padding: 6rpx 12rpx;
+	background-color: #ff4757;
+	border-radius: 12rpx;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.close-round-btn:hover {
+	background-color: #ff3742;
+}
+
+.close-round-btn.closing {
+	background-color: #ccc;
+	pointer-events: none;
+}
+
+.close-btn-text {
+	font-size: 22rpx;
+	color: #fff;
 	font-weight: 500;
 }
 
@@ -622,11 +714,11 @@ export default {
 }
 
 .participant-amount.positive {
-	color: #52c41a;
+	color: #ff4d4f; /* 红色代表赢/正数 */
 }
 
 .participant-amount.negative {
-	color: #ff4d4f;
+	color: #52c41a; /* 绿色代表输/负数 */
 }
 
 /* 旁观者列表样式 */

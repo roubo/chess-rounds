@@ -9,11 +9,21 @@
 				<text class="loading-text">加载中...</text>
 			</view>
 			
-			<!-- 空状态 -->
+			<!-- 完全无数据的空状态 -->
 			<view class="empty-state" v-else-if="rounds.length === 0">
 				<view class="empty-icon">🀄</view>
 				<text class="empty-title">暂无回合</text>
 				<text class="empty-desc">创建一个新的回合开始游戏吧</text>
+				<button class="empty-action" @click="handleEmptyAction" v-if="showEmptyAction">
+					创建回合
+				</button>
+			</view>
+			
+			<!-- 过滤后无内容的空状态 -->
+			<view class="empty-state" v-else-if="hasRoundsButNoDisplayContent">
+				<view class="empty-icon">🀄</view>
+				<text class="empty-title">暂无活跃回合</text>
+				<text class="empty-desc">当前没有进行中的回合，创建一个新的回合开始游戏吧</text>
 				<button class="empty-action" @click="handleEmptyAction" v-if="showEmptyAction">
 					创建回合
 				</button>
@@ -54,7 +64,7 @@
 			</view>
 			
 			<!-- 底部创建回合按钮 -->
-			<view class="bottom-action" v-if="rounds.length > 0">
+			<view class="bottom-action" v-if="hasDisplayContent">
 				<button class="create-round-bottom-btn" @click="handleCreateRound">
 					<text class="btn-icon">+</text>
 					<text class="btn-text">创建新回合</text>
@@ -121,6 +131,14 @@ export default {
 				const isActive = round.status !== 'finished'
 				return hasParticipants && isActive && round.isSpectator && !round.isParticipant && !round.isCreator
 			})
+		},
+		// 是否有数据但过滤后无显示内容
+		hasRoundsButNoDisplayContent() {
+			return this.rounds.length > 0 && this.myRounds.length === 0 && this.spectateRounds.length === 0
+		},
+		// 是否有显示内容
+		hasDisplayContent() {
+			return this.myRounds.length > 0 || this.spectateRounds.length > 0
 		}
 	},
 	methods: {

@@ -35,9 +35,13 @@
 				class="tab-content-scroll"
 				scroll-y="true"
 				refresher-enabled="true"
+				:refresher-threshold="120"
+				refresher-default-style="black"
 				:refresher-triggered="refresherTriggered"
 				@refresherrefresh="onRefresh"
 				@refresherrestore="onRestore"
+				enable-back-to-top="true"
+				scroll-with-animation="true"
 			>
 				<view class="tab-content">
 					<!-- 总览页面 -->
@@ -51,7 +55,7 @@
 						<view class="round-stats-container">
 							<view 
 								class="round-stat-card" 
-								v-for="(stat, key) in roundStats" 
+								v-for="(stat, key) in sortedRoundStats" 
 								:key="key"
 								:class="[
 									key === 'WAITING' ? 'status-waiting' : '',
@@ -62,7 +66,7 @@
 								@click="navigateToRoundList(key)"
 							>
 								<view class="stat-content">
-									<text class="stat-number">{{ stat.count || stat }}</text>
+									<text class="stat-number">{{ getStatCount(stat) }}</text>
 									<text class="stat-label">{{ getRoundStatusLabel(key) }}</text>
 								</view>
 								<view class="stat-arrow">
@@ -192,6 +196,30 @@ export default {
 		}
 	},
 	
+	computed: {
+		// 按指定顺序排序的回合统计数据
+		sortedRoundStats() {
+			const order = ['WAITING', 'IN_PROGRESS', 'PLAYING', 'FINISHED', 'CANCELLED']
+			const sorted = {}
+			
+			// 按指定顺序添加数据
+			order.forEach(status => {
+				if (this.roundStats[status]) {
+					sorted[status] = this.roundStats[status]
+				}
+			})
+			
+			// 添加其他未在顺序中的状态
+			Object.keys(this.roundStats).forEach(status => {
+				if (!order.includes(status)) {
+					sorted[status] = this.roundStats[status]
+				}
+			})
+			
+			return sorted
+		}
+	},
+
 	onLoad() {
 		// 检查管理员权限
 		this.checkAdminPermission()
@@ -462,6 +490,13 @@ export default {
 			return icons[status] || '📊'
 		},
 		
+		// 获取统计数量
+		getStatCount(stat) {
+			if (typeof stat === 'object') {
+				return stat.count !== undefined ? stat.count : 0
+			}
+			return stat
+		},
 
 		// 跳转到回合列表页
 		navigateToRoundList(status) {
@@ -501,6 +536,8 @@ export default {
 .container {
 	min-height: 100vh;
 	background-color: #f5f6fa;
+	display: flex;
+	flex-direction: column;
 }
 
 /* 头部区域 */
@@ -576,11 +613,13 @@ export default {
 
 .tab-content-scroll {
 	flex: 1;
-	height: calc(100vh - 200rpx);
+	height: calc(100vh - 240rpx);
+	min-height: 400rpx;
 }
 
 .tab-content {
 	padding: 20rpx;
+	min-height: 100%;
 }
 
 /* 统计卡片 */

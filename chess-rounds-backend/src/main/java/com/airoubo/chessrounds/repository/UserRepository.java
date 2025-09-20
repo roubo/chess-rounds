@@ -86,4 +86,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 是否存在
      */
     boolean existsByUnionid(String unionid);
+    
+    /**
+     * 查询非台板用户（分页）
+     * 
+     * @param pageable 分页参数
+     * @return 非台板用户分页结果
+     */
+    @Query("SELECT u FROM User u WHERE (u.nickname IS NULL OR NOT u.nickname LIKE '台板-%') " +
+           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%')")
+    org.springframework.data.domain.Page<User> findNonTableUsers(org.springframework.data.domain.Pageable pageable);
+    
+    /**
+     * 统计非台板用户总数
+     * 
+     * @return 非台板用户总数
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE (u.nickname IS NULL OR NOT u.nickname LIKE '台板-%') " +
+           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%')")
+    Long countNonTableUsers();
 }

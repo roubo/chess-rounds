@@ -422,12 +422,12 @@ export default {
 }
 
 .join-btn {
-	background-color: #27AE60;
+	background-color: #E74C3C;
 	color: #FFFFFF;
 }
 
 .leave-btn {
-	background-color: #E74C3C;
+	background-color: #27AE60;
 	color: #FFFFFF;
 }
 
