@@ -136,7 +136,7 @@ export default {
 				
 				// 处理头像URL拼接
 				if (mapped.avatarUrl && !mapped.avatarUrl.startsWith('http')) {
-					mapped.avatarUrl = config.staticBaseURL + mapped.avatarUrl
+					mapped.avatarUrl = this.$auth.getAvatarUrl(mapped.avatarUrl)
 				}
 				
 				console.log('原始participant:', participant)
@@ -161,7 +161,7 @@ export default {
 				
 				// 处理头像URL拼接
 				if (mapped.avatarUrl && !mapped.avatarUrl.startsWith('http')) {
-					mapped.avatarUrl = config.staticBaseURL + mapped.avatarUrl
+					mapped.avatarUrl = this.$auth.getAvatarUrl(mapped.avatarUrl)
 				}
 				
 				return mapped
@@ -362,15 +362,21 @@ export default {
 
 <style scoped lang="scss">
 .round-card {
-	background-color: white;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 20rpx;
 	margin-bottom: 20rpx;
-	box-shadow: 0 4rpx 12rpx rgba(93, 104, 138, 0.1);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
 	transition: all 0.3s ease;
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
 
 	&:active {
 		transform: scale(0.98);
+	}
+	
+	&:hover {
+		box-shadow: 0 6rpx 20rpx rgba(212, 175, 55, 0.15);
+		transform: translateY(-2rpx);
 	}
 }
 
@@ -394,21 +400,22 @@ export default {
 		font-size: 22rpx;
 		font-weight: 500;
 		padding: 4rpx 8rpx;
-		border-radius: 8rpx;
+		border-radius: $uni-border-radius-sm;
 	}
 
 	.round-time {
 		font-size: 22rpx;
-		color: $uni-text-color-grey;
+		color: $chess-color-muted;
 	}
 
 	.multiplier-hint {
 		font-size: 22rpx;
-		color: $uni-color-primary;
+		color: $chess-color-gold;
 		font-weight: 500;
-		background-color: lighten($uni-color-primary, 45%);
+		background-color: rgba(212, 175, 55, 0.1);
 		padding: 4rpx 8rpx;
-		border-radius: 8rpx;
+		border-radius: $uni-border-radius-sm;
+		border: 1rpx solid rgba(212, 175, 55, 0.3);
 	}
 }
 
@@ -421,16 +428,17 @@ export default {
 		font-size: 22rpx;
 		font-weight: 500;
 		padding: 4rpx 8rpx;
-		border-radius: 8rpx;
+		border-radius: $uni-border-radius-sm;
 	}
 
 	.multiplier-hint {
 		font-size: 22rpx;
-		color: $uni-color-primary;
+		color: $chess-color-gold;
 		font-weight: 500;
-		background-color: lighten($uni-color-primary, 45%);
+		background-color: rgba(212, 175, 55, 0.1);
 		padding: 4rpx 8rpx;
-		border-radius: 8rpx;
+		border-radius: $uni-border-radius-sm;
+		border: 1rpx solid rgba(212, 175, 55, 0.3);
 	}
 }
 
@@ -440,11 +448,11 @@ export default {
 
 	.create-time-text {
 		font-size: 22rpx;
-		color: $uni-text-color-grey;
-		background-color: #f8f9fa;
+		color: $chess-color-muted;
+		background-color: $chess-bg-secondary;
 		padding: 6rpx 12rpx;
-		border-radius: 12rpx;
-		border: 1rpx solid #e9ecef;
+		border-radius: $uni-border-radius-base;
+		border: 1rpx solid rgba(212, 175, 55, 0.2);
 		font-weight: 500;
 	}
 }
@@ -498,25 +506,29 @@ export default {
 		flex-direction: column;
 		align-items: center;
 		padding: 12rpx 8rpx;
-		background-color: #f8f9fa;
-		border-radius: 12rpx;
-		border: 1rpx solid #e9ecef;
+		background-color: $chess-bg-secondary;
+		border-radius: $uni-border-radius-base;
+		border: 1rpx solid rgba(212, 175, 55, 0.2);
 		gap: 8rpx;
 		flex: 1;
 		min-width: 0;
+		transition: all 0.3s ease;
 
-
+		&:hover {
+			box-shadow: 0 2rpx 8rpx rgba(212, 175, 55, 0.1);
+			transform: translateY(-1rpx);
+		}
 
 		&.current-user {
-			border-color: $uni-color-primary;
-			background-color: lighten($uni-color-primary, 45%);
+			border-color: $chess-color-gold;
+			background-color: rgba(212, 175, 55, 0.1);
 		}
 
 		.participant-avatar {
 			width: 60rpx;
 			height: 60rpx;
 			border-radius: 50%;
-			background-color: #ddd;
+			background-color: $chess-color-muted;
 		}
 
 		.participant-info {
@@ -529,7 +541,7 @@ export default {
 			.participant-name {
 				font-size: 24rpx;
 				font-weight: 500;
-				color: $uni-text-color;
+				color: $chess-color-dark;
 				text-align: center;
 				white-space: nowrap;
 				overflow: hidden;
@@ -540,15 +552,15 @@ export default {
 			.participant-amount {
 				font-size: 28rpx;
 				font-weight: bold;
-				color: $uni-text-color;
+				color: $chess-color-dark;
 				text-align: center;
 
 				&.positive {
-					color: $uni-color-success;
+					color: $chess-color-success;
 				}
 
 				&.negative {
-					color: $uni-color-error;
+					color: $chess-color-error;
 				}
 			}
 		}
@@ -558,7 +570,7 @@ export default {
 .spectators-section {
 	margin-top: 24rpx;
 	padding-top: 24rpx;
-	border-top: 1rpx solid #f0f0f0;
+	border-top: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .spectators-header {
@@ -568,7 +580,7 @@ export default {
 .spectators-title {
 	font-size: 24rpx;
 	font-weight: 600;
-	color: #666;
+	color: $chess-color-muted;
 }
 
 .spectators-list {
@@ -580,10 +592,17 @@ export default {
 .spectator-item {
 	display: flex;
 	align-items: center;
-	background: #f8f9fa;
+	background: $chess-bg-secondary;
 	border-radius: 20rpx;
 	padding: 8rpx 16rpx;
 	min-width: 0;
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
+	transition: all 0.3s ease;
+	
+	&:hover {
+		background: rgba(212, 175, 55, 0.1);
+		transform: translateY(-1rpx);
+	}
 }
 
 .spectator-avatar {
@@ -596,7 +615,7 @@ export default {
 
 .spectator-name {
 	font-size: 22rpx;
-	color: #666;
+	color: $chess-color-muted;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -608,7 +627,7 @@ export default {
 	justify-content: flex-end;
 	gap: 12rpx;
 	padding-top: 16rpx;
-	border-top: 1rpx solid #e9ecef;
+	border-top: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 // 旁观回合不显示分割线和按钮

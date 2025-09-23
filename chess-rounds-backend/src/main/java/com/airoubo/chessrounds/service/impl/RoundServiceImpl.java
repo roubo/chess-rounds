@@ -7,18 +7,25 @@ import com.airoubo.chessrounds.dto.user.UserInfoResponse;
 import com.airoubo.chessrounds.entity.Round;
 import com.airoubo.chessrounds.entity.Participant;
 import com.airoubo.chessrounds.entity.User;
+import com.airoubo.chessrounds.entity.ParticipantRecord;
+import com.airoubo.chessrounds.entity.CircleMember;
 import com.airoubo.chessrounds.enums.RoundStatus;
 import com.airoubo.chessrounds.enums.ParticipantRole;
 import com.airoubo.chessrounds.repository.RoundRepository;
 import com.airoubo.chessrounds.repository.ParticipantRepository;
+import com.airoubo.chessrounds.repository.ParticipantRecordRepository;
+import com.airoubo.chessrounds.repository.CircleMemberRepository;
 import com.airoubo.chessrounds.service.RoundService;
 import com.airoubo.chessrounds.service.UserService;
+import com.airoubo.chessrounds.service.CircleService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -41,11 +48,22 @@ import java.util.ArrayList;
 @Transactional
 public class RoundServiceImpl implements RoundService {
     
+    private static final Logger logger = LoggerFactory.getLogger(RoundServiceImpl.class);
+    
     @Autowired
     private RoundRepository roundRepository;
     
     @Autowired
     private ParticipantRepository participantRepository;
+    
+    @Autowired
+    private ParticipantRecordRepository participantRecordRepository;
+    
+    @Autowired
+    private CircleMemberRepository circleMemberRepository;
+    
+    @Autowired
+    private CircleService circleService;
     
     @Autowired
     private UserService userService;
@@ -246,6 +264,40 @@ public class RoundServiceImpl implements RoundService {
         round.setStatus(RoundStatus.FINISHED);
         round.setEndTime(LocalDateTime.now());
         roundRepository.save(round);
+        
+        // 游戏结束后，更新所有参与者在其所属圈子中的排行榜数据
+        updateParticipantsLeaderboardData(roundId);
+    }
+    
+    /**
+     * 更新回合参与者在其所属圈子中的排行榜数据
+     * 
+     * @param roundId 回合ID
+     */
+    private void updateParticipantsLeaderboardData(Long roundId) {
+        try {
+            // 获取回合的所有参与者
+            List<ParticipantRecord> participants = participantRecordRepository.findByRoundId(roundId);
+            
+            for (ParticipantRecord participant : participants) {
+                Long userId = participant.getUserId();
+                
+                // 获取用户加入的所有圈子
+                List<CircleMember> userCircles = circleMemberRepository.findByUserIdAndStatus(userId, 1, Pageable.unpaged()).getContent();
+                
+                // 为每个圈子更新排行榜数据
+                for (CircleMember circleMember : userCircles) {
+                    try {
+                        circleService.updateUserLeaderboardData(circleMember.getCircleId(), userId);
+                    } catch (Exception e) {
+                        logger.error("更新用户 {} 在圈子 {} 的排行榜数据失败: {}", 
+                                userId, circleMember.getCircleId(), e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("更新回合 {} 参与者排行榜数据失败: {}", roundId, e.getMessage());
+        }
     }
     
     @Override

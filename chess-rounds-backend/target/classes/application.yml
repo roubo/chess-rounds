@@ -6,7 +6,7 @@ spring:
   
   # 数据源配置
   datasource:
-    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://101.34.214.253:3306/chess_rounds?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&readOnlyPropagatesToServer=false
     username: chess_app
     password: EMO@chese@20250906
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -16,6 +16,7 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      read-only: false
   
   # JPA配置
   jpa:

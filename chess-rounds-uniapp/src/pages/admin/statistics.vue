@@ -535,45 +535,61 @@ export default {
 <style scoped>
 .container {
 	min-height: 100vh;
-	background-color: #f5f6fa;
+	background-color: $chess-bg-primary;
 	display: flex;
 	flex-direction: column;
 }
 
 /* 头部区域 */
 .header-section {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 20rpx 30rpx;
-	background: linear-gradient(135deg, #5D688A 0%, #7B8AAE 100%);
-	color: white;
+	background: linear-gradient(135deg, $chess-color-gold 0%, $chess-color-dark 100%);
+	padding: 40rpx 32rpx 60rpx;
+	color: $chess-bg-primary;
+	position: relative;
+	border-bottom: 2rpx solid rgba(212, 175, 55, 0.3);
 }
 
 .admin-header {
-	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 30rpx;
 }
 
 .admin-title {
-	font-size: 36rpx;
+	font-size: 48rpx;
 	font-weight: bold;
-	margin-bottom: 8rpx;
+	margin-bottom: 12rpx;
+	color: $chess-bg-primary;
 }
 
 .admin-subtitle {
-	font-size: 24rpx;
-	opacity: 0.8;
+	font-size: 28rpx;
+	opacity: 0.9;
+	color: $chess-bg-primary;
 }
 
 .refresh-btn {
-	padding: 12rpx 24rpx;
+	position: absolute;
+	top: 40rpx;
+	right: 32rpx;
+	padding: 16rpx 24rpx;
 	background-color: rgba(255, 255, 255, 0.2);
-	border-radius: 20rpx;
+	border-radius: $uni-border-radius-lg;
+	backdrop-filter: blur(10rpx);
+	border: 1rpx solid rgba(212, 175, 55, 0.3);
+	transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+	background-color: rgba(212, 175, 55, 0.3);
+	transform: translateY(-2rpx);
 }
 
 .refresh-text {
-	font-size: 24rpx;
-	color: white;
+	font-size: 28rpx;
+	color: $chess-bg-primary;
+	font-weight: 500;
 }
 
 /* Tab区域 */
@@ -581,33 +597,40 @@ export default {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
+	background-color: $chess-bg-primary;
 }
 
 .tab-header {
 	display: flex;
-	background-color: white;
-	border-bottom: 1rpx solid #eee;
+	background-color: $chess-bg-card;
+	border-bottom: 1rpx solid rgba(212, 175, 55, 0.2);
+	padding: 0 32rpx;
 }
 
 .tab-item {
 	flex: 1;
-	padding: 30rpx 0;
 	text-align: center;
+	padding: 32rpx 0;
 	border-bottom: 4rpx solid transparent;
-	transition: all 0.3s;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.tab-item:hover {
+	background-color: rgba(212, 175, 55, 0.1);
 }
 
 .tab-item.active {
-	border-bottom-color: #5D688A;
+	border-bottom-color: $chess-color-gold;
 }
 
 .tab-text {
 	font-size: 28rpx;
-	color: #666;
+	color: $chess-color-muted;
 }
 
 .tab-item.active .tab-text {
-	color: #5D688A;
+	color: $chess-color-gold;
 	font-weight: bold;
 }
 
@@ -624,11 +647,18 @@ export default {
 
 /* 统计卡片 */
 .stats-card {
-	background-color: white;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 30rpx;
 	margin-bottom: 20rpx;
-	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
+	transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+	transform: translateY(-2rpx);
+	box-shadow: 0 8rpx 20rpx rgba(212, 175, 55, 0.15);
 }
 
 .card-header {
@@ -638,7 +668,7 @@ export default {
 .card-title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #333;
+	color: $chess-color-dark;
 }
 
 .stats-grid {
@@ -653,20 +683,20 @@ export default {
 	align-items: center;
 	text-align: center;
 	padding: 20rpx;
-	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-	border-radius: 12rpx;
-	border: 1rpx solid #e9ecef;
+	background: linear-gradient(135deg, $chess-bg-secondary 0%, $chess-bg-card 100%);
+	border-radius: $uni-border-radius-base;
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
 	transition: all 0.3s ease;
 }
 
 .stat-item:hover {
 	transform: translateY(-2rpx);
-	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
 }
 
 .stat-label {
 	font-size: 26rpx;
-	color: #666;
+	color: $chess-color-muted;
 	margin-bottom: 12rpx;
 	font-weight: 500;
 }
@@ -674,7 +704,7 @@ export default {
 .stat-value {
 	font-size: 40rpx;
 	font-weight: bold;
-	color: #5D688A;
+	color: $chess-color-gold;
 	line-height: 1.2;
 }
 
@@ -745,59 +775,59 @@ export default {
 
 /* 状态样式 */
 .status-waiting {
-	background: linear-gradient(135deg, #FFF8E1 0%, #FFFDE7 100%);
-	border-color: #FFB74D;
+	background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+	border-color: $chess-color-gold;
 }
 
 .status-waiting .stat-icon {
-	background-color: #FFB74D;
-	color: white;
+	background-color: $chess-color-gold;
+	color: $chess-bg-primary;
 }
 
 .status-waiting .stat-number {
-	color: #F57C00;
+	color: $chess-color-gold;
 }
 
 .status-playing {
-	background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
-	border-color: #66BB6A;
+	background: linear-gradient(135deg, rgba(82, 196, 26, 0.1) 0%, rgba(82, 196, 26, 0.05) 100%);
+	border-color: $chess-color-success;
 }
 
 .status-playing .stat-icon {
-	background-color: #66BB6A;
-	color: white;
+	background-color: $chess-color-success;
+	color: $chess-bg-primary;
 }
 
 .status-playing .stat-number {
-	color: #388E3C;
+	color: $chess-color-success;
 }
 
 .status-finished {
-	background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 100%);
-	border-color: #42A5F5;
+	background: linear-gradient(135deg, rgba(93, 104, 138, 0.1) 0%, rgba(93, 104, 138, 0.05) 100%);
+	border-color: $chess-color-dark;
 }
 
 .status-finished .stat-icon {
-	background-color: #42A5F5;
-	color: white;
+	background-color: $chess-color-dark;
+	color: $chess-bg-primary;
 }
 
 .status-finished .stat-number {
-	color: #1976D2;
+	color: $chess-color-dark;
 }
 
 .status-cancelled {
-	background: linear-gradient(135deg, #FFEBEE 0%, #FCE4EC 100%);
-	border-color: #EF5350;
+	background: linear-gradient(135deg, rgba(255, 77, 79, 0.1) 0%, rgba(255, 77, 79, 0.05) 100%);
+	border-color: $chess-color-danger;
 }
 
 .status-cancelled .stat-icon {
-	background-color: #EF5350;
-	color: white;
+	background-color: $chess-color-danger;
+	color: $chess-bg-primary;
 }
 
 .status-cancelled .stat-number {
-	color: #D32F2F;
+	color: $chess-color-danger;
 }
 
 .card-subtitle {
@@ -822,10 +852,11 @@ export default {
 
 /* 用户列表 */
 .user-list {
-	background-color: white;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 30rpx;
-	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .list-header {
@@ -834,13 +865,13 @@ export default {
 	align-items: center;
 	margin-bottom: 30rpx;
 	padding-bottom: 20rpx;
-	border-bottom: 1rpx solid #f0f0f0;
+	border-bottom: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .list-title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #333;
+	color: $chess-color-dark;
 }
 
 .sort-controls {
@@ -851,34 +882,42 @@ export default {
 
 .sort-label {
 	font-size: 24rpx;
-	color: #666;
+	color: $chess-color-muted;
 }
 
 .sort-picker {
 	padding: 8rpx 16rpx;
-	background-color: #f5f6fa;
-	border-radius: 8rpx;
+	background-color: $chess-bg-secondary;
+	border-radius: $uni-border-radius-sm;
 	font-size: 24rpx;
-	color: #5D688A;
+	color: $chess-color-gold;
+	border: 1rpx solid rgba(212, 175, 55, 0.3);
 }
 
 .user-item {
 	display: flex;
 	align-items: flex-start;
 	padding: 20rpx 0;
-	border-bottom: 1rpx solid #f0f0f0;
+	border-bottom: 1rpx solid rgba(212, 175, 55, 0.1);
 	gap: 20rpx;
+	transition: all 0.3s ease;
 }
 
 .user-item:last-child {
 	border-bottom: none;
 }
 
+.user-item:hover {
+	background-color: rgba(212, 175, 55, 0.05);
+	border-radius: $uni-border-radius-sm;
+}
+
 .user-avatar {
 	width: 80rpx;
 	height: 80rpx;
 	border-radius: 50%;
-	background-color: #f0f0f0;
+	background-color: $chess-bg-secondary;
+	border: 2rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .user-info {

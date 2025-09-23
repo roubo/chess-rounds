@@ -339,7 +339,7 @@ export default {
 <style lang="scss" scoped>
 .profile-edit {
 	min-height: 100vh;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, $chess-bg-secondary 0%, $chess-color-dark 100%);
 	padding: 40rpx 30rpx;
 }
 
@@ -350,7 +350,7 @@ export default {
 	.title {
 		font-size: 48rpx;
 		font-weight: bold;
-		color: #ffffff;
+		color: $chess-bg-primary;
 		display: block;
 		margin-bottom: 20rpx;
 	}
@@ -363,11 +363,11 @@ export default {
 }
 
 .form-container {
-	background: #ffffff;
-	border-radius: 20rpx;
+	background: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 40rpx;
 	margin-bottom: 40rpx;
-	box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.1);
+	box-shadow: 0 10rpx 30rpx rgba(212, 175, 55, 0.1);
 }
 
 .form-item {
@@ -380,7 +380,7 @@ export default {
 	.label {
 		font-size: 32rpx;
 		font-weight: 600;
-		color: #333333;
+		color: $chess-color-dark;
 		display: block;
 		margin-bottom: 20rpx;
 	}
@@ -456,7 +456,7 @@ export default {
 		
 		.avatar-tip {
 			font-size: 24rpx;
-			color: #6c757d;
+			color: $chess-color-muted;
 			text-align: center;
 			line-height: 1.4;
 		}
@@ -468,19 +468,19 @@ export default {
 			.option-btn {
 				padding: 15rpx 25rpx;
 				border-radius: 25rpx;
-				border: 2rpx solid #e9ecef;
-				background: #ffffff;
+				border: 2rpx solid rgba(212, 175, 55, 0.2);
+				background: $chess-bg-card;
 				font-size: 24rpx;
 				transition: all 0.3s ease;
 				
 				.option-text {
-					color: #495057;
+					color: $chess-color-dark;
 					font-size: 24rpx;
 				}
 				
 				&:active {
-					background: #f8f9fa;
-					border-color: #dee2e6;
+					background: rgba(212, 175, 55, 0.1);
+					border-color: rgba(212, 175, 55, 0.3);
 					transform: scale(0.95);
 				}
 			}
@@ -492,20 +492,20 @@ export default {
 	.nickname-input {
 		width: 100%;
 		padding: 25rpx 20rpx;
-		border: 2rpx solid #e9ecef;
-		border-radius: 10rpx;
+		border: 2rpx solid rgba(212, 175, 55, 0.2);
+		border-radius: $uni-border-radius-base;
 		font-size: 30rpx;
-		color: #333333;
-		background: #ffffff;
+		color: $chess-color-dark;
+		background: $chess-bg-card;
 		
 		&:focus {
-			border-color: #667eea;
+			border-color: $chess-color-gold;
 		}
 	}
 	
 	.nickname-tip {
 		font-size: 24rpx;
-		color: #6c757d;
+		color: $chess-color-muted;
 		display: block;
 		margin-top: 10rpx;
 	}
@@ -520,7 +520,7 @@ export default {
 	.skip-btn {
 		width: 100%;
 		padding: 30rpx;
-		border-radius: 15rpx;
+		border-radius: $uni-border-radius-lg;
 		font-size: 32rpx;
 		font-weight: 600;
 		border: none;
@@ -531,19 +531,19 @@ export default {
 	}
 	
 	.save-btn {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: #ffffff;
+		background: linear-gradient(135deg, $chess-color-gold 0%, $chess-color-dark 100%);
+		color: $chess-bg-primary;
 		
 		&:disabled {
-			background: #cccccc;
-			color: #666666;
+			background: $chess-color-muted;
+			color: $chess-bg-secondary;
 			transform: none;
 		}
 	}
 	
 	.skip-btn {
 		background: transparent;
-		color: #ffffff;
+		color: $chess-bg-primary;
 		border: 2rpx solid rgba(255, 255, 255, 0.5);
 		
 		&:active {

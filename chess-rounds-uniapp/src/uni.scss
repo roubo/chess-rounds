@@ -16,9 +16,9 @@
 
 /* 行为相关颜色 */
 $uni-color-primary: #d4af37; // 象棋金色主题
-$uni-color-success: #dd524d; // 红色系代表赢/正数（已对换）
+$uni-color-success: #dd524d; // 红色系代表赢/正数
 $uni-color-warning: #f0ad4e;
-$uni-color-error: #4cd964; // 绿色系代表输/负数（已对换）
+$uni-color-error: #4cd964; // 绿色系代表输/负数
 
 /* 象棋主题色彩 */
 $chess-color-gold: #d4af37; // 金色
@@ -28,6 +28,9 @@ $chess-color-red: #dc143c; // 红方
 $chess-color-black: #2f4f4f; // 黑方
 $chess-color-board: #daa520; // 棋盘色
 $chess-color-muted: #999999; // 静音/次要文字颜色
+$chess-color-success: #dd524d; // 成功/红色（用于正数）
+$chess-color-warning: #ff9500; // 警告/橙色
+$chess-color-error: #4cd964; // 错误/绿色（用于负数）
 
 /* 文字基本颜色 */
 $uni-text-color:#333;//基本色
@@ -44,6 +47,7 @@ $uni-bg-color-mask:rgba(0, 0, 0, 0.4);//遮罩颜色
 
 /* 象棋主题背景色 */
 $chess-bg-primary: #faf8f3; // 主背景色
+$chess-bg-secondary: #f5f3ed; // 次要背景色
 $chess-bg-card: #ffffff; // 卡片背景色
 $chess-bg-active: rgba(212, 175, 55, 0.1); // 激活状态背景
 

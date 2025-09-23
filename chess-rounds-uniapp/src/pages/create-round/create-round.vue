@@ -706,7 +706,7 @@ export default {
 .container {
 	padding: 0;
 	min-height: 100vh;
-	background-color: #f8f8f8;
+	background-color: $chess-bg-primary;
 	display: flex;
 	flex-direction: column;
 }
@@ -716,19 +716,19 @@ export default {
 }
 
 .card {
-	background: white;
-	border-radius: 20rpx;
+	background: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 28rpx;
 	margin-left: 18rpx;
 	margin-right: 18rpx;
-	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-	border: 1rpx solid rgba(0, 0, 0, 0.05);
+	box-shadow: 0 4rpx 20rpx rgba(212, 175, 55, 0.08);
+	border: 1rpx solid rgba(212, 175, 55, 0.05);
 }
 
 .card-title {
 	font-size: 36rpx;
 	font-weight: 600;
-	color: #333;
+	color: $chess-color-dark;
 	margin-bottom: 20rpx;
 }
 
@@ -742,7 +742,7 @@ export default {
 		
 		.section-title {
 			font-size: 32rpx;
-			color: #333;
+			color: $chess-color-dark;
 			font-weight: 600;
 			margin: 0;
 		}
@@ -754,7 +754,7 @@ export default {
 			
 			.toggle-label {
 				font-size: 26rpx;
-				color: #666;
+				color: $chess-color-muted;
 			}
 			
 			switch {
@@ -775,13 +775,13 @@ export default {
 	
 	.setting-label {
 		font-size: 32rpx;
-		color: #333;
+		color: $chess-color-dark;
 		font-weight: 500;
 	}
 	
 	.setting-hint {
 		font-size: 24rpx;
-		color: #999;
+		color: $chess-color-muted;
 		line-height: 1.4;
 	}
 }
@@ -804,9 +804,9 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	padding: 16rpx 12rpx;
-	border-radius: 10rpx;
-	border: 2rpx dashed #e5e5e5;
-	background: #fafafa;
+	border-radius: $uni-border-radius-base;
+	border: 2rpx dashed rgba(212, 175, 55, 0.3);
+	background: rgba(212, 175, 55, 0.05);
 	transition: all 0.3s;
 	min-height: 110rpx;
 	justify-content: center;
@@ -818,18 +818,18 @@ export default {
 	}
 	
 	&.occupied {
-		border: 2rpx solid #d4af37;
-		background: linear-gradient(135deg, #fff9e6 0%, #fef7d6 100%);
+		border: 2rpx solid $chess-color-gold;
+		background: linear-gradient(135deg, rgba(255, 249, 230, 0.8) 0%, rgba(254, 247, 214, 0.8) 100%);
 		box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.2);
 	}
 	
 	&.table-board {
-		border-color: #8b4513;
-		background: linear-gradient(135deg, #f4f1e8 0%, #ede4d3 100%);
+		border-color: $chess-color-dark;
+		background: linear-gradient(135deg, rgba(244, 241, 232, 0.8) 0%, rgba(237, 228, 211, 0.8) 100%);
 		
 		&.occupied {
-			border-color: #8b4513;
-			background: linear-gradient(135deg, #f0e6d2 0%, #e8dcc6 100%);
+			border-color: $chess-color-dark;
+			background: linear-gradient(135deg, rgba(240, 230, 210, 0.8) 0%, rgba(232, 220, 198, 0.8) 100%);
 			box-shadow: 0 4rpx 12rpx rgba(139, 69, 19, 0.2);
 		}
 	}

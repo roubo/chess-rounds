@@ -216,16 +216,16 @@ export default {
 <style scoped>
 .detail-page {
 	padding: 20rpx;
-	background-color: #FFF2EF;
+	background-color: $chess-bg-primary;
 	min-height: 100vh;
 }
 
 .round-card {
-	background-color: #FFFFFF;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 40rpx;
 	margin-bottom: 30rpx;
-	box-shadow: 0 4rpx 12rpx rgba(93, 104, 138, 0.1);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
 }
 
 .round-header {
@@ -238,7 +238,7 @@ export default {
 .round-name {
 	font-size: 36rpx;
 	font-weight: bold;
-	color: #2C3E50;
+	color: $chess-color-dark;
 	flex: 1;
 }
 
@@ -253,23 +253,23 @@ export default {
 }
 
 .status-active {
-	background-color: #E8F5E8;
-	color: #27AE60;
+	background: rgba(76, 175, 80, 0.1);
+	color: $chess-color-success;
 }
 
 .status-playing {
-	background-color: #FFF3CD;
-	color: #F39C12;
+	background: rgba(255, 152, 0, 0.1);
+	color: $chess-color-warning;
 }
 
 .status-finished {
-	background-color: #F5F5F5;
-	color: #95A5A6;
+	background-color: $chess-bg-secondary;
+	color: $chess-color-muted;
 }
 
 .status-cancelled {
-	background-color: #FADBD8;
-	color: #E74C3C;
+	background: rgba(244, 67, 54, 0.1);
+	color: $chess-color-error;
 }
 
 .round-info {
@@ -288,23 +288,23 @@ export default {
 
 .info-label {
 	font-size: 28rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 	width: 160rpx;
 	flex-shrink: 0;
 }
 
 .info-value {
 	font-size: 28rpx;
-	color: #2C3E50;
+	color: $chess-color-dark;
 	flex: 1;
 }
 
 .participants-section {
-	background-color: #FFFFFF;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 40rpx;
 	margin-bottom: 30rpx;
-	box-shadow: 0 4rpx 12rpx rgba(93, 104, 138, 0.1);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
 }
 
 .section-title {
@@ -316,12 +316,12 @@ export default {
 .title-text {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #2C3E50;
+	color: $chess-color-dark;
 }
 
 .title-count {
 	font-size: 28rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 	margin-left: 8rpx;
 }
 
@@ -334,7 +334,7 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 20rpx 0;
-	border-bottom: 1rpx solid #F5F5F5;
+	border-bottom: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .participant-item:last-child {
@@ -346,7 +346,7 @@ export default {
 	height: 80rpx;
 	border-radius: 40rpx;
 	margin-right: 24rpx;
-	background-color: #F5F5F5;
+	background-color: $chess-bg-secondary;
 }
 
 .participant-info {
@@ -357,14 +357,14 @@ export default {
 
 .participant-name {
 	font-size: 28rpx;
-	color: #2C3E50;
+	color: $chess-color-dark;
 	font-weight: bold;
 	margin-bottom: 4rpx;
 }
 
 .participant-role {
 	font-size: 24rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 }
 
 .participant-rating {
@@ -373,7 +373,7 @@ export default {
 
 .rating-text {
 	font-size: 26rpx;
-	color: #5D688A;
+	color: $chess-color-gold;
 	font-weight: bold;
 }
 
@@ -381,7 +381,7 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 20rpx 0;
-	border-bottom: 1rpx solid #F5F5F5;
+	border-bottom: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .empty-slot:last-child {
@@ -393,18 +393,18 @@ export default {
 	height: 80rpx;
 	border-radius: 40rpx;
 	margin-right: 24rpx;
-	background-color: #F5F5F5;
+	background-color: $chess-bg-secondary;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-size: 32rpx;
-	color: #BDC3C7;
-	border: 2rpx dashed #BDC3C7;
+	color: $chess-color-muted;
+	border: 2rpx dashed rgba(212, 175, 55, 0.3);
 }
 
 .empty-text {
 	font-size: 28rpx;
-	color: #BDC3C7;
+	color: $chess-color-muted;
 }
 
 .action-section {
@@ -416,28 +416,28 @@ export default {
 	height: 88rpx;
 	font-size: 32rpx;
 	font-weight: bold;
-	border-radius: 12rpx;
+	border-radius: $uni-border-radius-base;
 	border: none;
 	margin-bottom: 20rpx;
 }
 
 .join-btn {
-	background-color: #E74C3C;
+	background-color: $chess-color-error;
 	color: #FFFFFF;
 }
 
 .leave-btn {
-	background-color: #27AE60;
+	background-color: $chess-color-success;
 	color: #FFFFFF;
 }
 
 .start-btn {
-	background-color: #5D688A;
+	background-color: $chess-color-gold;
 	color: #FFFFFF;
 }
 
 .spectate-btn {
-	background-color: #F39C12;
+	background-color: $chess-color-warning;
 	color: #FFFFFF;
 }
 </style>

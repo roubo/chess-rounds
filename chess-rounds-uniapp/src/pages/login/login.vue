@@ -159,7 +159,7 @@ export default {
 <style scoped>
 .login-page {
 	min-height: 100vh;
-	background: linear-gradient(135deg, #5D688A 0%, #8B9DC3 100%);
+	background: linear-gradient(135deg, $chess-bg-secondary 0%, rgba(212, 175, 55, 0.3) 100%);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -169,10 +169,10 @@ export default {
 .login-container {
 	width: 100%;
 	max-width: 600rpx;
-	background-color: #FFFFFF;
-	border-radius: 24rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 60rpx 40rpx;
-	box-shadow: 0 8rpx 32rpx rgba(93, 104, 138, 0.2);
+	box-shadow: 0 8rpx 32rpx rgba(212, 175, 55, 0.15);
 }
 
 .logo-section {
@@ -185,28 +185,30 @@ export default {
 .logo {
 	width: 120rpx;
 	height: 120rpx;
-	background-color: #5D688A;
+	background: linear-gradient(135deg, $chess-color-gold, rgba(212, 175, 55, 0.8));
 	border-radius: 60rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	margin-bottom: 24rpx;
+	box-shadow: 0 4rpx 16rpx rgba(212, 175, 55, 0.2);
 }
 
 .logo-text {
 	font-size: 60rpx;
+	color: #fff;
 }
 
 .app-name {
 	font-size: 48rpx;
 	font-weight: bold;
-	color: #2C3E50;
+	color: $chess-color-dark;
 	margin-bottom: 12rpx;
 }
 
 .app-desc {
 	font-size: 26rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 	text-align: center;
 }
 
@@ -223,22 +225,22 @@ export default {
 
 .desc-text {
 	font-size: 28rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 	line-height: 1.5;
 }
 
 .not-wechat-tip {
 	margin-top: 40rpx;
 	padding: 24rpx;
-	background-color: #FFF3CD;
-	border-radius: 12rpx;
-	border: 1rpx solid #FFEAA7;
+	background: rgba(255, 247, 230, 0.8);
+	border-radius: $uni-border-radius-base;
+	border: 1rpx solid rgba(212, 175, 55, 0.3);
 	text-align: center;
 }
 
 .tip-text {
 	font-size: 26rpx;
-	color: #856404;
+	color: $chess-color-warning;
 }
 
 .wechat-btn {

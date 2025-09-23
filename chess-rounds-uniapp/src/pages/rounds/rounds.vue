@@ -150,7 +150,7 @@ export default {
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
-	background-color: #FFF2EF;
+	background-color: $chess-bg-primary;
 	/* 隐藏滚动条 */
 	::-webkit-scrollbar {
 		display: none;
@@ -185,7 +185,7 @@ export default {
 
 .empty-desc {
 	font-size: 26rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 	line-height: 1.4;
 	margin-bottom: 32rpx;
 }

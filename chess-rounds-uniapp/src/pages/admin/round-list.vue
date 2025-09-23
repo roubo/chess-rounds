@@ -469,7 +469,7 @@ export default {
 <style scoped>
 .round-list-page {
 	height: 100vh;
-	background-color: #f5f5f5;
+	background-color: $chess-bg-primary;
 	display: flex;
 	flex-direction: column;
 }
@@ -477,11 +477,11 @@ export default {
 /* 导航栏 */
 .nav-bar {
 	height: 88rpx;
-	background-color: #fff;
+	background: linear-gradient(135deg, $chess-color-gold 0%, $chess-color-dark 100%);
 	display: flex;
 	align-items: center;
 	padding: 0 32rpx;
-	border-bottom: 1rpx solid #eee;
+	border-bottom: 2rpx solid rgba(212, 175, 55, 0.3);
 	position: sticky;
 	top: 0;
 	z-index: 100;
@@ -505,13 +505,13 @@ export default {
 .nav-icon {
 	font-size: 48rpx;
 	font-weight: bold;
-	color: #333;
+	color: $chess-bg-primary;
 }
 
 .nav-title {
 	font-size: 36rpx;
 	font-weight: bold;
-	color: #333;
+	color: $chess-bg-primary;
 }
 
 /* 内容区域 */
@@ -541,7 +541,7 @@ export default {
 
 .loading-text {
 	font-size: 28rpx;
-	color: #999;
+	color: $chess-color-muted;
 }
 
 /* 空状态 */
@@ -556,11 +556,12 @@ export default {
 .empty-icon {
 	font-size: 120rpx;
 	margin-bottom: 32rpx;
+	color: $chess-color-muted;
 }
 
 .empty-text {
 	font-size: 28rpx;
-	color: #999;
+	color: $chess-color-muted;
 }
 
 /* 回合卡片 */
@@ -569,10 +570,17 @@ export default {
 }
 
 .round-card {
-	background-color: #fff;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 32rpx;
-	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.1);
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
+	transition: all 0.3s ease;
+}
+
+.round-card:hover {
+	transform: translateY(-2rpx);
+	box-shadow: 0 8rpx 20rpx rgba(212, 175, 55, 0.15);
 }
 
 .round-header {
@@ -798,27 +806,27 @@ export default {
 
 /* 状态样式 */
 .status-waiting {
-	background-color: #FFF8E1;
-	color: #F57C00;
-	border: 1rpx solid #FFB74D;
+	background-color: rgba(212, 175, 55, 0.1);
+	color: $chess-color-gold;
+	border: 1rpx solid rgba(212, 175, 55, 0.3);
 }
 
 .status-playing {
-	background-color: #E8F5E8;
-	color: #388E3C;
-	border: 1rpx solid #66BB6A;
+	background-color: rgba(76, 175, 80, 0.1);
+	color: $chess-color-success;
+	border: 1rpx solid rgba(76, 175, 80, 0.3);
 }
 
 .status-finished {
-	background-color: #E3F2FD;
-	color: #1976D2;
-	border: 1rpx solid #42A5F5;
+	background-color: rgba(76, 175, 80, 0.1);
+	color: $chess-color-success;
+	border: 1rpx solid rgba(76, 175, 80, 0.3);
 }
 
 .status-cancelled {
-	background-color: #FFEBEE;
-	color: #D32F2F;
-	border: 1rpx solid #EF5350;
+	background-color: rgba(244, 67, 54, 0.1);
+	color: $chess-color-error;
+	border: 1rpx solid rgba(244, 67, 54, 0.3);
 }
 
 /* 加载更多 */

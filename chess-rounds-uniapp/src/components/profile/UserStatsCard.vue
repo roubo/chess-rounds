@@ -7,32 +7,32 @@
 		
 		<view class="stats-grid">
 			<view class="stat-item">
-				<view class="stat-value">{{ stats.totalRounds || 0 }}</view>
+				<view class="stat-value">{{ safeStats.totalRounds }}</view>
 				<text class="stat-label">总回合数</text>
 			</view>
 			
 			<view class="stat-item">
-				<view class="stat-value" :class="winRateClass">{{ formatWinRate(stats.winRate) }}%</view>
+				<view class="stat-value" :class="winRateClass">{{ formatWinRate(safeStats.winRate) }}%</view>
 				<text class="stat-label">胜率</text>
 			</view>
 			
 			<view class="stat-item">
-				<view class="stat-value" :class="totalAmountClass">{{ formatAmount(stats.totalAmount) }}</view>
+				<view class="stat-value" :class="totalAmountClass">{{ formatAmount(safeStats.totalAmount) }}</view>
 				<text class="stat-label">总盈亏</text>
 			</view>
 			
 			<view class="stat-item win-item">
-				<view class="stat-value">{{ stats.winRounds || 0 }}</view>
+				<view class="stat-value">{{ safeStats.winRounds }}</view>
 				<text class="stat-label">胜场</text>
 			</view>
 			
 			<view class="stat-item lose-item">
-				<view class="stat-value">{{ stats.loseRounds || 0 }}</view>
+				<view class="stat-value">{{ safeStats.loseRounds }}</view>
 				<text class="stat-label">负场</text>
 			</view>
 			
 			<view class="stat-item draw-item">
-				<view class="stat-value">{{ stats.drawRounds || 0 }}</view>
+				<view class="stat-value">{{ safeStats.drawRounds }}</view>
 				<text class="stat-label">平场</text>
 			</view>
 		</view>
@@ -67,14 +67,26 @@ export default {
 		}
 	},
 	computed: {
+		// 确保统计数据有默认值
+		safeStats() {
+			return {
+				totalRounds: this.stats?.totalRounds || 0,
+				winRate: this.stats?.winRate || 0,
+				totalAmount: this.stats?.totalAmount || 0,
+				winAmount: this.stats?.winAmount || 0,
+				winRounds: this.stats?.winRounds || 0,
+				loseRounds: this.stats?.loseRounds || 0,
+				drawRounds: this.stats?.drawRounds || 0
+			}
+		},
 		winRateClass() {
-			const rate = this.stats.winRate || 0
-			if (rate >= 60) return 'positive-value'
-			if (rate >= 40) return 'neutral-value'
-			return 'negative-value'
+			const rate = this.safeStats.winRate || 0
+			if (rate >= 60) return 'win-rate-high'
+			if (rate >= 40) return 'win-rate-medium'
+			return 'win-rate-low'
 		},
 		totalAmountClass() {
-			const amount = this.stats.totalAmount || 0
+			const amount = this.safeStats.totalAmount || 0
 			if (amount > 0) return 'positive-value'
 			if (amount < 0) return 'negative-value'
 			return 'neutral-value'
@@ -124,32 +136,39 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .stats-card {
-	background-color: #FFFFFF;
-	border-radius: 16rpx;
+	background-color: $chess-bg-card;
+	border-radius: $uni-border-radius-lg;
 	padding: 24rpx;
 	margin-bottom: 16rpx;
-	box-shadow: 0 2rpx 12rpx rgba(93, 104, 138, 0.1);
+	box-shadow: 0 2rpx 12rpx rgba(212, 175, 55, 0.1);
+	border: 1rpx solid rgba(212, 175, 55, 0.2);
+	transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+	box-shadow: 0 4rpx 20rpx rgba(212, 175, 55, 0.15);
+	transform: translateY(-2rpx);
 }
 
 .card-header {
 	margin-bottom: 24rpx;
 	padding-bottom: 16rpx;
-	border-bottom: 1rpx solid #F0F0F0;
+	border-bottom: 1rpx solid rgba(212, 175, 55, 0.2);
 }
 
 .card-title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #2C3E50;
+	color: $chess-color-dark;
 	display: block;
 	margin-bottom: 8rpx;
 }
 
 .card-subtitle {
 	font-size: 24rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 }
 
 .stats-grid {
@@ -164,61 +183,80 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	padding: 24rpx 16rpx;
-	background-color: #F8F9FA;
-	border-radius: 12rpx;
+	background-color: $chess-bg-secondary;
+	border-radius: $uni-border-radius-base;
 	position: relative;
 	transition: all 0.3s ease;
+	border: 1rpx solid rgba(212, 175, 55, 0.1);
+}
+
+.stat-item:hover {
+	transform: translateY(-2rpx);
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.15);
 }
 
 .stat-item.win-item {
-	background: linear-gradient(135deg, #FDF2F2 0%, #FEF5F5 100%);
-	border: 1rpx solid #E74C3C;
+	background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(254, 245, 245, 0.8) 100%);
+	border: 1rpx solid rgba(231, 76, 60, 0.3);
 }
 
 .stat-item.lose-item {
-	background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
-	border: 1rpx solid #27AE60;
+	background: linear-gradient(135deg, rgba(39, 174, 96, 0.1) 0%, rgba(240, 248, 240, 0.8) 100%);
+	border: 1rpx solid rgba(39, 174, 96, 0.3);
 }
 
 .stat-item.draw-item {
-	background: linear-gradient(135deg, #FEF9E7 0%, #FFFBF0 100%);
-	border: 1rpx solid #F39C12;
+	background: linear-gradient(135deg, rgba(243, 156, 18, 0.1) 0%, rgba(255, 251, 240, 0.8) 100%);
+	border: 1rpx solid rgba(243, 156, 18, 0.3);
 }
 
 .stat-value {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #2C3E50;
+	color: $chess-color-dark;
 	margin-bottom: 8rpx;
 }
 
 .stat-value.positive-value {
-	color: #E74C3C;
+	color: $chess-color-success;
 }
 
 .stat-value.negative-value {
-	color: #27AE60;
+	color: $chess-color-error;
 }
 
 .stat-value.neutral-value {
-	color: #F39C12;
+	color: $chess-color-warning;
+}
+
+/* 胜率专用蓝色系样式 */
+.stat-value.win-rate-high {
+	color: #1890ff; /* 高胜率：深蓝色 */
+}
+
+.stat-value.win-rate-medium {
+	color: #40a9ff; /* 中等胜率：中蓝色 */
+}
+
+.stat-value.win-rate-low {
+	color: #69c0ff; /* 低胜率：浅蓝色 */
 }
 
 .win-item .stat-value {
-	color: #E74C3C;
+	color: $chess-color-success;
 }
 
 .lose-item .stat-value {
-	color: #27AE60;
+	color: $chess-color-error;
 }
 
 .draw-item .stat-value {
-	color: #F39C12;
+	color: $chess-color-warning;
 }
 
 .stat-label {
 	font-size: 22rpx;
-	color: #7F8C8D;
+	color: $chess-color-muted;
 	font-weight: 500;
 }
 
@@ -229,7 +267,7 @@ export default {
 
 .admin-divider {
 	height: 1rpx;
-	background-color: #E8E8E8;
+	background-color: rgba(212, 175, 55, 0.3);
 	margin-bottom: 20rpx;
 }
 
@@ -239,16 +277,17 @@ export default {
 	justify-content: space-between;
 	width: 100%;
 	padding: 20rpx 24rpx;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, $chess-color-gold 0%, rgba(212, 175, 55, 0.8) 100%);
 	border: none;
-	border-radius: 12rpx;
-	box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+	border-radius: $uni-border-radius-base;
+	box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.3);
 	transition: all 0.3s ease;
+	border: 1rpx solid rgba(212, 175, 55, 0.4);
 }
 
 .admin-btn:active {
 	transform: translateY(2rpx);
-	box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.4);
+	box-shadow: 0 2rpx 8rpx rgba(212, 175, 55, 0.4);
 }
 
 .admin-btn-icon {
@@ -260,13 +299,13 @@ export default {
 	flex: 1;
 	font-size: 28rpx;
 	font-weight: 600;
-	color: #FFFFFF;
+	color: $chess-bg-primary;
 	text-align: left;
 }
 
 .admin-btn-arrow {
 	font-size: 32rpx;
-	color: #FFFFFF;
+	color: $chess-bg-primary;
 	font-weight: bold;
 }
 
