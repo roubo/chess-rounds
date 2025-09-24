@@ -1,4 +1,8 @@
 <template>
+	<page-meta 
+		enable-pull-down-refresh="true"
+		@pulldownrefresh="onPullDownRefresh"
+	/>
 	<view class="container">
 		<!-- 顶部用户信息区域 -->
 		<view class="header-section">
@@ -41,15 +45,8 @@
 				</view>
 			</view>
 			
-			<!-- Tab内容区域 - 简化scroll-view配置 -->
-			<scroll-view 
-				class="tab-content-scroll"
-				scroll-y="true"
-				refresher-enabled="true"
-				:refresher-triggered="refresherTriggered"
-				@refresherrefresh="onRefresh"
-				@refresherrestore="onRestore"
-			>
+			<!-- Tab内容区域 -->
+			<view class="tab-content-scroll">
 				<view class="tab-content">
 					<!-- 汇总页面 -->
 					<view class="summary-content" v-if="activeTab === 'summary'">
@@ -221,7 +218,7 @@
 						</view>
 					</view>
 				</view>
-			</scroll-view>
+			</view>
 		</view>
 		
 		<!-- 圈子操作弹窗 -->
@@ -261,7 +258,6 @@ export default {
 		return {
 			isLoggedIn: false, // 登录状态
 			activeTab: 'summary', // 当前激活的tab
-			refresherTriggered: false, // 下拉刷新状态
 			userInfo: {
 				nickname: '',
 				avatar: '',
@@ -309,6 +305,11 @@ export default {
 	onShow() {
 		// 页面显示时检查登录状态，确保从登录页面返回后能更新状态
 		this.checkLoginStatus()
+	},
+	
+	onPullDownRefresh() {
+		// 页面级下拉刷新
+		this.onRefresh()
 	},
 	methods: {
 		// 切换下拉选择器状态
@@ -503,12 +504,7 @@ export default {
 		},
 		// 下拉刷新触发
 		onRefresh() {
-			this.refresherTriggered = true
 			this.refreshData()
-		},
-		// 下拉刷新恢复
-		onRestore() {
-			this.refresherTriggered = false
 		},
 		// 刷新数据
 		async refreshData() {
@@ -533,10 +529,8 @@ export default {
 				console.error('刷新数据失败:', error)
 				// uni.showToast() - 已屏蔽
 			} finally {
-				// 延迟一点时间再关闭刷新状态，提供更好的用户体验
-				setTimeout(() => {
-					this.refresherTriggered = false
-				}, 500)
+				// 停止页面级下拉刷新
+				uni.stopPullDownRefresh()
 			}
 		},
 		formatTime(timeStr) {
@@ -898,7 +892,7 @@ export default {
 	position: sticky;
 	top: 0;
 	background-color: $chess-bg-primary;
-	padding: 30rpx 20rpx 25rpx;
+	padding: 20rpx;
 	margin-bottom: 20rpx;
 	z-index: 10;
 	box-shadow: 0 2rpx 8rpx rgba(212, 175, 55, 0.1);
@@ -993,7 +987,6 @@ export default {
 	background: $chess-bg-card;
 	border-radius: $uni-border-radius-lg;
 	margin: 0 20rpx 25rpx;
-	overflow: hidden;
 	box-shadow: 0 8rpx 32rpx rgba(212, 175, 55, 0.08);
 	flex: 1;
 	display: flex;
@@ -1001,9 +994,13 @@ export default {
 }
 
 .tab-header {
+	position: sticky;
+	top: 200rpx;
 	display: flex;
-	background: $chess-bg-secondary;
+	background: $chess-bg-primary;
 	border-bottom: 1rpx solid rgba(212, 175, 55, 0.2);
+	z-index: 9;
+	box-shadow: 0 2rpx 8rpx rgba(212, 175, 55, 0.1);
 }
 
 .tab-item {
@@ -1043,17 +1040,7 @@ export default {
 
 .tab-content-scroll {
 	flex: 1;
-	/* 移除可能导致iOS兼容性问题的height: 0 */
-	/* height: 0; */
-	min-height: 0; /* 使用min-height替代 */
-	/* iOS兼容性优化 */
-	-webkit-overflow-scrolling: touch;
-	/* 隐藏滚动条 */
-	::-webkit-scrollbar {
-		display: none;
-	}
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE 10+ */
+	min-height: 0;
 }
 
 .tab-content {

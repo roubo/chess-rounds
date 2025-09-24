@@ -404,19 +404,60 @@ public class CircleServiceImpl implements CircleService {
     
     @Override
     @Transactional
-    public Page<CircleLeaderboardResponse> getCircleLeaderboard(Long circleId, Long userId, Pageable pageable) {
+    public Page<CircleLeaderboardResponse> getCircleLeaderboard(Long circleId, Long userId, Pageable pageable, String sortBy, String sortOrder) {
         // 检查用户是否是圈子成员
         if (!isMember(userId, circleId)) {
             throw new RuntimeException("您不是该圈子的成员");
         }
         
-        // 查询排行榜数据
-        Page<CircleLeaderboard> leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScore(circleId, pageable);
+        // 根据排序参数选择查询方法
+        Page<CircleLeaderboard> leaderboardPage;
+        
+        // 默认排序参数
+        if (sortBy == null || sortBy.isEmpty()) {
+            sortBy = "score";
+        }
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            sortOrder = "desc";
+        }
+        
+        // 根据排序字段和方向选择对应的查询方法
+        if ("score".equalsIgnoreCase(sortBy)) {
+            if ("asc".equalsIgnoreCase(sortOrder)) {
+                leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScoreAsc(circleId, pageable);
+            } else {
+                leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScore(circleId, pageable);
+            }
+        } else if ("winRate".equalsIgnoreCase(sortBy)) {
+            if ("asc".equalsIgnoreCase(sortOrder)) {
+                leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByWinRateAsc(circleId, pageable);
+            } else {
+                leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByWinRate(circleId, pageable);
+            }
+        } else {
+            // 默认按积分降序排序
+            leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScore(circleId, pageable);
+        }
         
         // 如果排行榜为空，尝试初始化排行榜数据
         if (leaderboardPage.isEmpty()) {
             initializeCircleLeaderboard(circleId);
-            leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScore(circleId, pageable);
+            // 重新查询
+            if ("score".equalsIgnoreCase(sortBy)) {
+                if ("asc".equalsIgnoreCase(sortOrder)) {
+                    leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScoreAsc(circleId, pageable);
+                } else {
+                    leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScore(circleId, pageable);
+                }
+            } else if ("winRate".equalsIgnoreCase(sortBy)) {
+                if ("asc".equalsIgnoreCase(sortOrder)) {
+                    leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByWinRateAsc(circleId, pageable);
+                } else {
+                    leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByWinRate(circleId, pageable);
+                }
+            } else {
+                leaderboardPage = circleLeaderboardRepository.findByCircleIdOrderByScore(circleId, pageable);
+            }
         }
         
         // 转换为响应对象

@@ -240,15 +240,32 @@ public class CircleController {
      * @param request HTTP请求
      * @param circleId 圈子ID
      * @param pageable 分页参数
+     * @param sort 排序参数
      * @return 排行榜
      */
     @GetMapping("/{circleId}/leaderboard")
     public ResponseEntity<Page<CircleLeaderboardResponse>> getCircleLeaderboard(
             HttpServletRequest request,
             @PathVariable Long circleId,
+            @RequestParam(required = false) String sort,
             Pageable pageable) {
         Long userId = getUserIdFromRequest(request);
-        Page<CircleLeaderboardResponse> leaderboard = circleService.getCircleLeaderboard(circleId, userId, pageable);
+        
+        // 解析排序参数
+        String sortBy = "score";
+        String sortOrder = "desc";
+        
+        if (sort != null && !sort.isEmpty()) {
+            String[] sortParams = sort.split(",");
+            if (sortParams.length >= 1) {
+                sortBy = sortParams[0].trim();
+            }
+            if (sortParams.length >= 2) {
+                sortOrder = sortParams[1].trim();
+            }
+        }
+        
+        Page<CircleLeaderboardResponse> leaderboard = circleService.getCircleLeaderboard(circleId, userId, pageable, sortBy, sortOrder);
         return ResponseEntity.ok(leaderboard);
     }
     

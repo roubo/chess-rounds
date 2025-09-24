@@ -44,6 +44,36 @@ public interface CircleLeaderboardRepository extends JpaRepository<CircleLeaderb
     Page<CircleLeaderboard> findByCircleIdOrderByScore(@Param("circleId") Long circleId, Pageable pageable);
     
     /**
+     * 根据圈子ID查找排行榜（按积分升序排序）
+     * 
+     * @param circleId 圈子ID
+     * @param pageable 分页参数
+     * @return 排行榜分页列表
+     */
+    @Query("SELECT cl FROM CircleLeaderboard cl WHERE cl.circleId = :circleId ORDER BY cl.score ASC, cl.winRate ASC, cl.totalGames ASC")
+    Page<CircleLeaderboard> findByCircleIdOrderByScoreAsc(@Param("circleId") Long circleId, Pageable pageable);
+    
+    /**
+     * 根据圈子ID查找排行榜（按胜率降序排序）
+     * 
+     * @param circleId 圈子ID
+     * @param pageable 分页参数
+     * @return 排行榜分页列表
+     */
+    @Query("SELECT cl FROM CircleLeaderboard cl WHERE cl.circleId = :circleId ORDER BY cl.winRate DESC, cl.score DESC, cl.totalGames DESC")
+    Page<CircleLeaderboard> findByCircleIdOrderByWinRate(@Param("circleId") Long circleId, Pageable pageable);
+    
+    /**
+     * 根据圈子ID查找排行榜（按胜率升序排序）
+     * 
+     * @param circleId 圈子ID
+     * @param pageable 分页参数
+     * @return 排行榜分页列表
+     */
+    @Query("SELECT cl FROM CircleLeaderboard cl WHERE cl.circleId = :circleId ORDER BY cl.winRate ASC, cl.score ASC, cl.totalGames ASC")
+    Page<CircleLeaderboard> findByCircleIdOrderByWinRateAsc(@Param("circleId") Long circleId, Pageable pageable);
+    
+    /**
      * 根据圈子ID和赛季查找排行榜
      * 
      * @param circleId 圈子ID

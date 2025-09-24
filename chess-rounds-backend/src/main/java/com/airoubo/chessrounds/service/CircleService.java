@@ -128,11 +128,13 @@ public interface CircleService {
      * 获取圈子排行榜
      * 
      * @param circleId 圈子ID
-     * @param userId 当前用户ID
+     * @param userId 用户ID
      * @param pageable 分页参数
-     * @return 排行榜列表
+     * @param sortBy 排序字段（score, winRate）
+     * @param sortOrder 排序方向（asc, desc）
+     * @return 排行榜分页列表
      */
-    Page<CircleLeaderboardResponse> getCircleLeaderboard(Long circleId, Long userId, Pageable pageable);
+    Page<CircleLeaderboardResponse> getCircleLeaderboard(Long circleId, Long userId, Pageable pageable, String sortBy, String sortOrder);
     
     /**
      * 刷新圈子排行榜

@@ -245,10 +245,10 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
     }
     
     /**
-     * 判断是否为台板用户
+     * 判断是否为台板用户或微信用户
      * 
      * @param user 用户对象
-     * @return 是否为台板用户
+     * @return 是否为台板用户或微信用户
      */
     private boolean isTableUser(User user) {
         if (user == null) {
@@ -262,6 +262,11 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         
         // 检查openid是否以"table_"开头
         if (user.getOpenid() != null && user.getOpenid().startsWith("table_")) {
+            return true;
+        }
+        
+        // 检查nickname是否为"微信用户"
+        if (user.getNickname() != null && "微信用户".equals(user.getNickname())) {
             return true;
         }
         

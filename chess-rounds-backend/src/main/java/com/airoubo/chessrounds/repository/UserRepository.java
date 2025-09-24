@@ -60,7 +60,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByLastLoginAtAfter(LocalDateTime lastLoginTime);
     
     /**
-     * 统计活跃用户数量（排除台板数据）
+     * 统计活跃用户数量（排除台板数据和微信用户）
      * 
      * @param status 用户状态
      * @param lastLoginTime 最后登录时间
@@ -68,7 +68,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status AND u.lastLoginAt >= :lastLoginTime " +
            "AND (u.nickname IS NULL OR NOT u.nickname LIKE '台板-%') " +
-           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%')")
+           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%') " +
+           "AND (u.nickname IS NULL OR u.nickname != '微信用户')")
     Long countActiveUsers(@Param("status") Integer status, @Param("lastLoginTime") LocalDateTime lastLoginTime);
     
     /**
@@ -88,21 +89,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUnionid(String unionid);
     
     /**
-     * 查询非台板用户（分页）
+     * 查询非台板用户（分页，排除微信用户）
      * 
      * @param pageable 分页参数
      * @return 非台板用户分页结果
      */
     @Query("SELECT u FROM User u WHERE (u.nickname IS NULL OR NOT u.nickname LIKE '台板-%') " +
-           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%')")
+           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%') " +
+           "AND (u.nickname IS NULL OR u.nickname != '微信用户')")
     org.springframework.data.domain.Page<User> findNonTableUsers(org.springframework.data.domain.Pageable pageable);
     
     /**
-     * 统计非台板用户总数
+     * 统计非台板用户总数（排除微信用户）
      * 
      * @return 非台板用户总数
      */
     @Query("SELECT COUNT(u) FROM User u WHERE (u.nickname IS NULL OR NOT u.nickname LIKE '台板-%') " +
-           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%')")
+           "AND (u.openid IS NULL OR NOT u.openid LIKE 'table_%') " +
+           "AND (u.nickname IS NULL OR u.nickname != '微信用户')")
     Long countNonTableUsers();
 }
