@@ -4,6 +4,7 @@ import com.airoubo.chessrounds.entity.CircleMember;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -151,4 +152,27 @@ public interface CircleMemberRepository extends JpaRepository<CircleMember, Long
      */
     @Query("UPDATE CircleMember cm SET cm.status = 0, cm.leftAt = :leftAt WHERE cm.circleId = :circleId AND cm.status = 1")
     void softDeleteAllMembers(@Param("circleId") Long circleId, @Param("leftAt") LocalDateTime leftAt);
+    
+    /**
+     * 根据用户ID和状态查找圈子成员
+     * 
+     * @param userId 用户ID
+     * @param status 成员状态
+     * @return 圈子成员列表
+     */
+    List<CircleMember> findByUserIdAndStatus(Long userId, Integer status);
+    
+    /**
+     * 批量更新圈子成员信息
+     * 
+     * @param userId 用户ID
+     * @param nickname 新昵称
+     * @param avatarUrl 新头像URL
+     * @return 更新的记录数
+     */
+    @Modifying
+    @Query("UPDATE CircleMember cm SET cm.nickname = :nickname, cm.avatarUrl = :avatarUrl WHERE cm.userId = :userId AND cm.status = 1")
+    int updateMemberInfoByUserId(@Param("userId") Long userId, 
+                                @Param("nickname") String nickname, 
+                                @Param("avatarUrl") String avatarUrl);
 }

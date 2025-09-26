@@ -54,6 +54,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private ParticipantRecordRepository participantRecordRepository;
     
+    @Autowired
+    private com.airoubo.chessrounds.repository.CircleMemberRepository circleMemberRepository;
+    
     @Override
     public UserLoginResponse login(UserLoginRequest loginRequest) {
         try {
@@ -200,13 +203,25 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
         
-        // 更新用户资料
+        boolean needSyncCircleMembers = false;
+        
+        // 更新用户昵称
         if (updateRequest.getNickname() != null && !updateRequest.getNickname().trim().isEmpty()) {
-            user.setNickname(updateRequest.getNickname());
+            if (!updateRequest.getNickname().equals(user.getNickname())) {
+                user.setNickname(updateRequest.getNickname());
+                needSyncCircleMembers = true;
+            }
         }
+        
+        // 更新用户头像
         if (updateRequest.getAvatarUrl() != null && !updateRequest.getAvatarUrl().trim().isEmpty()) {
-            user.setAvatarUrl(updateRequest.getAvatarUrl());
+            if (!updateRequest.getAvatarUrl().equals(user.getAvatarUrl())) {
+                user.setAvatarUrl(updateRequest.getAvatarUrl());
+                needSyncCircleMembers = true;
+            }
         }
+        
+        // 更新其他字段
         if (updateRequest.getGender() != null) {
             user.setGender(updateRequest.getGender());
         }
@@ -222,7 +237,14 @@ public class UserServiceImpl implements UserService {
         user.setUpdatedAt(LocalDateTime.now());
         
         user = userRepository.save(user);
-        logger.info("用户资料更新成功，userId: {}, nickname: {}", userId, user.getNickname());
+        
+        // 同步更新圈子成员信息
+        if (needSyncCircleMembers) {
+            syncCircleMemberInfo(userId, user.getNickname(), user.getAvatarUrl());
+        }
+        
+        logger.info("用户资料更新成功，userId: {}, nickname: {}, syncCircleMembers: {}", 
+                   userId, user.getNickname(), needSyncCircleMembers);
         return convertToUserInfoResponse(user);
     }
     
@@ -383,6 +405,23 @@ public class UserServiceImpl implements UserService {
         response.setCreatedAt(user.getCreatedAt());
         response.setLastLoginTime(user.getLastLoginAt());
         return response;
+    }
+    
+    /**
+     * 同步更新圈子成员信息
+     * 
+     * @param userId 用户ID
+     * @param nickname 新昵称
+     * @param avatarUrl 新头像URL
+     */
+    private void syncCircleMemberInfo(Long userId, String nickname, String avatarUrl) {
+        try {
+            int updatedCount = circleMemberRepository.updateMemberInfoByUserId(userId, nickname, avatarUrl);
+            logger.info("同步更新圈子成员信息成功，userId: {}, updatedCount: {}", userId, updatedCount);
+        } catch (Exception e) {
+            logger.error("同步更新圈子成员信息失败，userId: {}, error: {}", userId, e.getMessage(), e);
+            // 不抛出异常，避免影响用户资料更新的主流程
+        }
     }
     
     /**
